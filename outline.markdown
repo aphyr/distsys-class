@@ -541,57 +541,363 @@ Lamport, 1987:
   - More during cluster transitions.
 
 
-### VR
-
 ### Paxos
+
+- Paxos is the Gold Standard of consensus algorithms
+  - Lamport 1970 - The Part Time Parliament
+  - Lamport - Paxos Made Easy
+    - OK, if you didn't get it the first time, here's the simple version
+  - Google 2007 - Paxos Made Live
+    - Notes from productionizing Chubby, Google's lock service
+  - Van Renesse 2011 - Paxos Made Moderately Complex
+    - Turns out you gotta optimize
+    - Also pseudocode would help
+    - A page of pseudocode -> several thousand lines of C++
+- Provides consensus on independent proposals
+- Several optimizations
+  - Multi-Paxos
+  - Fast Paxos
+  - Generalized Paxos
+  - It's not always clear which of these optimizations to use, and which
+    can be safely combined
+- Used in a variety of production systems, often to *build* a replicated log
+  - Chubby
+  - Cassandar
+  - FoundationDB
+  - WANdisco SVN servers
+- We're not even sure Chubby *is* Paxos, as described in the papers
+  - Paxos is really more of a *family* of algorithms than a well-described
+    single entity
+  - Though we're pretty darn confident in the various proofs at this point
+- Typically deployed in majority quorums, 5 or 7 nodes
 
 ### ZAB
 
+- ZAB is the Zookeeper Atomic Broadcast protocol
+- Junqueira, Reed, and Serafini 2011 - Zab: High-performance broadcast for
+  primary-backup systems
+- Differs from Paxos
+- Provides sequential consistency
+  - Useful because ZK clients typically want fast local reads
+    - But they're expected to lag somewhat
+  - But there's also a SYNC command that guarantees real-time visibility
+  - (SYNC + op) allows linearizable reads as well
+- Again, majority quorum, 5 or 7 nodes
+
+### Viewstamped Replication
+
+- Presented as a replication protocol, but also a consensus algorithm
+- Transaction processing plus a view change algorithm
+- Majority-known values are guaranteed to survive into the future
+- I'm not aware of any production systems, but I'm sure they're out there
+- Along with Paxos, inspired Raft in some ways
+
 ### Raft
+
+- Ongaro & Ousterhout 2014 - In Search of an Understandable Consensus Algorithm
+- Lamport says it's easy, but we still have trouble grokking Paxos
+  - What if there were a consensus algorithm we could actually understand?
+- Paxos approaches independent decisions when what we *want* is FSMs
+  - Maintains a replicated *log* instead
+- Also builds in cluster membership transitions, which is *key* for real systems
+- Can be used to write arbitrary sequential or linearizable state machines
+- Very new, no formal proof yet
+  - But nobody's objected to Diego's proof sketch, so far
 
 
 
 
 ## Characteristic latencies
 
+- Different kinds of systems have different definitions of "slow"
+  - Different goals
+  - Different algorithms
+
 ### Multicore systems
+
+- Multicore (and especially NUMA) architectures are a distributed system
+  - Whole complicated set of protocols in HW & microcode to make memory look
+    sane
+  - Non-temporal store instructions (e.g. MOVNTI)
+- They provide abstractions to hide that distribution
+  - MFENCE/SFENCE/LFENCE
+    - introduce a serialization point against load/store instructions
+    - Characteristic latencies: ~100 cycles / ~30 ns
+      - Really depends on HW, caches, instructions, etc
+  - Compare-and-Swap (sequentially consistent modification of memory)
+  - LOCK
+    - Lock the full memory subsystem across cores!
+- But those abstractions come with costs
+  - Read Mechanical Sympathy!
+  - Hardware lock elision is nascent
+  - Avoid coordination between cores wherever possible
+  - Context switches (process or thread!) can be expensive
+  - Processor pinning can really improve things
+  - When writing multithreaded programs, try to divide your work into
+    independent chunks
+    - Try to align memory barriers to work unit boundaries
+    - Allows the processor to cheat as much as possible within a work unit
 
 ### Local networks
 
+- You'll often deploy replicated systems across something like an ethernet LAN
+- Message latencies can be as low as 100 micros
+  - But across any sizable network (EC2), expect low millis
+  - Sometimes, packets could be delayed by *five minutes*
+  - Plan for this
+- Network is within an order of mag compared to uncached disk seeks
+  - Or faster, in EC2
+    - EC2 disk latencies can routinely hit 20ms
+      - 200ms?
+        - *20,000* ms???
+          - Because EBS is actually other computers
+          - LMAO if you think anything in EC2 is real
+            - Wait, *real disks do this too*?
+              - What even are IO schedulers?
+- But network is waaaay slower than memory/computation
+  - If your aim is *throughput*, work units should probably take longer than a
+    millisecond
+  - But there are other reasons to distribute
+    - Sharding resources
+    - Isolating failures
+
 ### Geographic replication
 
+- You deploy worldwide for two reasons
+  - End-user latency
+    - Users can detect ~10ms lag, will tolerate ~100ms
+      - SF--Denver: 50ms
+      - SF--Tokyo: 100 ms
+      - SF--Madrid: 200 ms
+    - Only way to beat the speed of light: move the service closer
+  - Disaster recovery
+    - Datacenter power is good but not perfect
+    - Hurricanes are a thing
+    - Entire Amazon regions can and will fail
+      - Yes, regions, not AZs
+- Minimum of 1 round-trip for consensus
+  - Maybe as bad as 4 rounds
+    - Maybe 4 rounds all the time if you have a bad Paxos impl (e.g. Cassandra)
+  - So if you do Paxos between datacenters, be ready for that cost!
+  - Because the minimum latencies are higher than users will tolerate
+    - Consider reduced consistency guarantees in exchange for lower latency
+    - CRDTs can always give you safe local reads
+    - Causal consistency and HATs can be good calls here
+- What about strongly consistent stuff?
+  - Chances are a geographically distributed service has natural planes of
+  cleavage
+    - EU users live on EU servers; US users live on US servers
+    - Use consensus to migrate users between datacenters
+  - Pin/proxy updates to home datacenter
+    - Which is hopefully the closest datacenter!
+    - But maybe not! I believe Facebook still pushes all writes through 1 DC!
+  - Where sequential/serializable consistency is OK, cache reads locally!
+    - You probably leverage caching in a single DC already
 
 
 
 ## A Pattern Language
 
+- General recommendations for building distributed systems
+  - Hard-won experience
+  - Repeating what other experts tell me
+    - Over beers
+  - Hearsay
+  - Oversimplifications
+  - Cargo-culting
+  - Stuff I just made up
+  - YMMV
+
 ### Don't distribute
+
+- Rule 1: don't distribute where you don't have to
+  - Is this thing small enough to fit on one node?
+    - Could we just buy a bigger box?
+  - Can we make the node reliable enough for the service's
+  - Can this service tolerate a single node's guarantees?
+  - Could we just stand up another one if it breaks?
+  - Could manual intervention take the place of the distributed algorithm?
+
+### Use another distributed system
+
+- If we have to distribute, can we push the work onto some other software?
+  - What about a distributed database?
+  - Can we pay Amazon to do this for us?
+  - Conversely, what are the care and feeding costs?
+  - How much do you have to learn to use/operate that distributed system?
 
 ### Never fail
 
+- Buy really expensive hardware
+  - Make changes to software and hardware in a controlled fashion
+  - Dry-run deployments against staging environments
+  - Possible to build very reliable networks and machines
+    - At the cost of moving slower, buying more expensive HW, finding talent
+
 ### Accept failure
+
+- OK fine; we're gonna go down
+  - What's our SLA anyway?
+  - Can we recover by hand?
+  - Can we pay someone to fix it?
+  - Could insurance cover the damage?
+  - Could we just call the customer and apologize?
+- Sounds silly, but may be much cheaper
+  - This is how financial companies and retailers do it!
+
+### Backups
+
+- Backups are essentially sequential consistency
+  - When done correctly
+  - Some backup programs don't snapshot state, which leads to FS or DB
+    corruption
+    - Broken fkey relationships, missing files, etc...
+  - Allow you to recover in a matter of minutes to days
+  - But more than recovery, they allow you to step back in time
+    - Useful for recovering from logical faults
+      - Distributed DB did its job correctly, but you told it to delete key
+        data
 
 ### Redundancy
 
+- OK, so failure is less of an option
+- Want to *reduce the probability of failure*
+- Have the same state and same computation take place on several nodes
+  - I'm not a huge believer in active-spare
+    - Spare might have cold caches, broken disks, old versions, etc
+    - Spares tend to fail when becoming active
+    - Active-active wherever possible
+      - Predictability over efficiency
+  - Also not a huge fan of only having 2 copies
+    - Node failure probabilities just too high
+    - OK for not-important data
+    - I generally want three copies of data
+      - For important stuff, 4 or 5
+      - For Paxos and other majority-quorum systems, odd numbers: 3, 5, 7
+        common
+  - Common DR strategy: Paxos across 5 nodes; 3 or 4 in primary DC
+    - Ops can complete as soon as the local nodes ack; low latencies
+    - Resilient to single-node failure (though latencies will spike)
+    - But you still have a seqentially consistent backup in the other DC
+      - So in the event you lose an entire DC, all's not lost
+    - See Camille Fournier's talks on ZK deployment
 - Redundancy improves availability so long as failures are uncorrelated
   - Failures are not uncorrelated
+    - Disks from the same batch failing at the same time
+    - Same-rack nodes failing when the top-of-rack switch blows
+    - Same-DC nodes failing when the UPS blows
+    - See entire EC2 AZ failures
+    - Running the same bad computation on every node will break every node
+      - Expensive queries
+      - Riak list-keys
+      - Cassandra doomstones
+    - Cascading failures
+      - Thundering-herd
+      - TCP incast
 
 ### Sharding
 
+- The problem is too big
+- Break the problem into parts small enough to fit on a node
+  - Not too small: small parts => high overhead
+  - Not too big: need to rebalance work units gradually from node to node
+  - Somewhere around 10-100 work units/node is ideal, IMO
+- Ideal: work units of equal size
+  - Beware hotspots
+  - Beware changing workloads with time
+- Know your bounds in advance
+  - How big can a single part get before overwhelming a node?
+  - How do we enforce that limit *before* it sinks a node in prod?
+    - Then sinks all the other nodes, one by one, as the system rebalances
+- Good candidate for ZK, Etcd, and so on
+  - See Boundary's Ordasity
+
 ### Immutable values
+
+- Data that never changes is trivial to store
+  - Never requires coordination
+  - Cheap replication and recovery
+  - Minimal repacking on disk
+- Useful for Cassandra, Riak, any LSM-tree DB.
+  - Or for logs like Kafka!
+- Extremely high availability and durability, tunable write latency
+- Low read latencies: can respond from closest replica
+  - Especially valuable for geographic distribution
+- Easy to reason about: either present or it's not
+  - Eliminates all kinds of transactional headaches
+  - Extremely cachable
+- Requires garbage collection!
+  - But there are good ways to do this
 
 ### Mutable identities
 
-### Strong Metadata, cheap storage
-
-
-
-
-## Production Systems
+- Pointers to immutable values
+- Pointers are small! Only metadata!
+  - Can fit huge numbers of pointers on a small DB
+  - Good candidate for consensus services or relational DBs
+- And typically, not many pointers in the system
+  - Your entire DB could be represented by a single pointer
+  - Datomic only has ~5 identities
+- Strongly consistent operations over identities can be *backed* by immutable
+  HA storage
+  - Take advantage of AP storage latencies and scale
+  - Take advantage of strong consistency over small datasets provided by
+    consensus systems
+  - Write availability limited by identity store
+    - But, reads eminently cachable if you only need sequential consistency
+    - Can be even cheaper if you only need serializability
+  - See Rich Hickey's talks on Datomic architecture
+  - See Pat Helland's 2013 RICON West keynote on Salesforce's storage
 
 ### Services for domain models
 
+- The problem is composed of interacting logical pieces
+- Pieces have distinct code, performance, storage needs
+  - Monolithic applications are essentially *multitenant* systems
+    - Multitenancy is fucking hard
+- Divide your system into logical services for discete parts of the domain
+  model
+  - OO approach: each *noun* is a service
+    - User service
+    - Video service
+    - Index service
+  - Functional approach: each *verb* is a service
+    - Auth service
+    - Search service
+    - Dispatch/routing service
+  - Most big systems I know of use a hybrid
+    - Services for nouns is a good way to enforce *datatype invariants*
+    - Services for verbs is a good way to enforce *transformation invariants*
+    - So have a basic User service, which is used *by* an Auth service
+  - Where you draw the line... well that's tricky
+    - Consider work units
+    - Consider which services have varying availability guarantees
+    - Colocate services with tight dependencies and tight latency budgets
+    - Colocate services which use complementary resources (e.g. disk and CPU)
+      - Run memcache on rendering nodes
+      - Use Mesos to automatically allocate services to HW?
+
 ### Structure Follows Social Spaces
+
+- Natural alignment: a team or person owns a specific service
+- Inter-team communication goes hand in hand with inter-service communication
+  - Consider team size and codebase complexity when sizing services
+- Libraries can be orthogonal to services
+  - Perfectly OK to depend on a user library in multiple services
+  - Libraries can become services later
+- Services probably need a client library
+  - That library might be "Open a socket" or an HTTP client
+    - Haproxy is an excellent router for both HTTP and TCP services
+    - Leverage HTTP headers!
+      - Accept headers for versioning
+      - Lots of support for caching and proxying
+  - But eventually, library might include mock IO
+    - Service team is responsible for testing that the service provides an API
+    - When the API is known to be stable, every client can *assume* it works
+    - Removes the need for network calls in test suites
+    - Dramatic reduction in test runtime and dev environment complexity
+
+## Production Concerns
 
 ### Test everything
 
