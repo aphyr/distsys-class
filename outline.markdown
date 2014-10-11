@@ -37,20 +37,23 @@ Lamport, 1987:
 - So also:
   - X86 NUMA architectures
   - ATMs and Point-of-Sale terminals
+  - Space probes
   - Paying bills
   - Doctors making referrals
   - Drunk friends texting trying to make plans via text message
   - Every business meeting ever
-  - Space probes
-  - Hanging up first
 
 ## Nodes and networks
 
-- We call each part of a distributed system a *node*, *process*, *agent*, or
-  *actor*.
+- We call each part of a distributed system a *node*
+  - Also known as *processes*, *agents*, or *actors*
 
 ### Nodes as linearization points
 
+- Characteristic latency
+  - Operations inside a node are "fast"
+  - Operations between nodes are "slow"
+  - What's fast or slow depends on what the system does
 - A node could *itself* be a distributed system
   - But for the purposes of analysis, we say it's a single coherent process
   - Things on a node appear to occur in a well-defined order
@@ -59,10 +62,6 @@ Lamport, 1987:
   - Crash-stop
   - Crash-recover
   - Byzantine
-- Characteristic latency
-  - Operations inside a node are "fast"
-  - Operations between nodes are "slow"
-  - What's fast or slow depends on what the system does
 
 ### Networks as message flows
 
@@ -262,6 +261,8 @@ Lamport, 1987:
 
 ## Consistency
 
+- A consistency model is the set of "safe" histories of events in the system
+
 ### Monotonic Reads
 
 - Once I read a value, any successive read will return a causally consequent
@@ -381,7 +382,7 @@ Lamport, 1987:
   - You can have *totally* available...
     - Read Uncommitted
     - Read Committed
-    - Monotomic Atomic View
+    - Monotonic Atomic View
     - Writes Follow Reads
     - Monotonic Reads
     - Monotonic Writes
@@ -418,30 +419,8 @@ Lamport, 1987:
   - Small data is usually critical
   - Linearizable user ops, causally consistent social feeds
 
-## Gossip
 
-- Useful for service discovery, performance tuning, self-healing, etc
-- Very weak consistency
-- Very high availability
 
-### Global broadcast
-
-- Send a message to every other node
-- O(nodes)
-
-### Mesh networks
-
-- Epidemic models
-- Relay to your neighbors
-- Propagation times on the order of max-free-path
-
-### Spanning trees
-
-- Instead of a mesh, use a tree
-- Hop up to a connector node which relays to other connector nodes
-- Reduces superfluous messages
-- Reduces latency
-- Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
 
 
 ## Avoid Consensus Wherever Possible
@@ -464,6 +443,26 @@ Lamport, 1987:
 - Bloom language
   - Unordered programming with flow analysis
   - Can hint where coordination *would* be required
+
+
+### Gossip
+
+- Useful for service discovery, performance tuning, self-healing, etc
+- Very weak consistency
+- Very high availability
+- Global broadcast
+  - Send a message to every other node
+  - O(nodes)
+- Mesh networks
+  - Epidemic models
+  - Relay to your neighbors
+  - Propagation times on the order of max-free-path
+- Spanning trees
+  - Instead of a mesh, use a tree
+  - Hop up to a connector node which relays to other connector nodes
+  - Reduces superfluous messages
+  - Reduces latency
+  - Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
 
 ### CRDTs
 
@@ -494,7 +493,7 @@ Lamport, 1987:
   - Excellent for commutative/monotonic systems
   - Foreign key constraints for multi-item updates
   - Limited uniqueness constraints
-  - Can ensure convergence given arbitrary finite delay ("eventual consistency)
+  - Can ensure convergence given arbitrary finite delay ("eventual consistency")
   - Good candidates for geographically distributed systems
   - Probably best in concert with stronger transactional systems
   - See also: COPS, Swift, Eiger, etc
@@ -554,6 +553,7 @@ Lamport, 1987:
     - Also pseudocode would help
     - A page of pseudocode -> several thousand lines of C++
 - Provides consensus on independent proposals
+- Typically deployed in majority quorums, 5 or 7 nodes
 - Several optimizations
   - Multi-Paxos
   - Fast Paxos
@@ -562,14 +562,14 @@ Lamport, 1987:
     can be safely combined
 - Used in a variety of production systems, often to *build* a replicated log
   - Chubby
-  - Cassandar
+  - Cassandra
+  - Riak
   - FoundationDB
   - WANdisco SVN servers
 - We're not even sure Chubby *is* Paxos, as described in the papers
   - Paxos is really more of a *family* of algorithms than a well-described
     single entity
   - Though we're pretty darn confident in the various proofs at this point
-- Typically deployed in majority quorums, 5 or 7 nodes
 
 ### ZAB
 
@@ -601,7 +601,7 @@ Lamport, 1987:
   - Maintains a replicated *log* instead
 - Also builds in cluster membership transitions, which is *key* for real systems
 - Can be used to write arbitrary sequential or linearizable state machines
-- Very new, no formal proof yet
+- Very new, no *thorough* formal proof yet
   - But nobody's objected to Diego's proof sketch, so far
 
 
@@ -621,7 +621,7 @@ Lamport, 1987:
   - Non-temporal store instructions (e.g. MOVNTI)
 - They provide abstractions to hide that distribution
   - MFENCE/SFENCE/LFENCE
-    - introduce a serialization point against load/store instructions
+    - Introduce a serialization point against load/store instructions
     - Characteristic latencies: ~100 cycles / ~30 ns
       - Really depends on HW, caches, instructions, etc
   - Compare-and-Swap (sequentially consistent modification of memory)
@@ -685,7 +685,7 @@ Lamport, 1987:
     - Causal consistency and HATs can be good calls here
 - What about strongly consistent stuff?
   - Chances are a geographically distributed service has natural planes of
-  cleavage
+    cleavage
     - EU users live on EU servers; US users live on US servers
     - Use consensus to migrate users between datacenters
   - Pin/proxy updates to home datacenter
@@ -897,18 +897,134 @@ Lamport, 1987:
     - Removes the need for network calls in test suites
     - Dramatic reduction in test runtime and dev environment complexity
 
+
+
 ## Production Concerns
+
+- More than design considerations
+- Proofs are important, but real systems do IO
+- Distributed systems are supported by your culture
+  - Development
+  - QA
+  - Operations
+  - (These are all aspects of the same process)
 
 ### Test everything
 
+- Type systems are great for preventing logical errors
+  - Which reduces your testing burden
+- However, they are *not* great at predicting or controlling runtime
+  performance
+- So, you need a solid test suite
+  - Ideally, you want a *slider* for rigorousness
+  - Quick example-based tests that run in a few seconds
+  - More thorough property-based tests that can run overnight
+  - Establish invariants
+  - Be able to simulate an entire cluster in-process
+  - Control concurrent interleavings with simulated networks
+
 ### "It's Slow"
+
+- The worst bug you'll ever hear is "it's slow"
+  - Happens all the time, really difficult to localize
+  - Because the system is distributed, have to profile multiple nodes
+    - Not many profilers are built for this
+  - Profilers are good at finding CPU problems
+    - But high latency is often a sign of IO, not CPU
+    - Disk latency
+    - Network latency
+    - GC latency
+    - Queue latency
 
 ### Instrument everything
 
-### Versioning and rollouts
-
-### Feature flags
+- Slowness (and outright errors) in prod stem from interacting systems
+  - Because your thorough test suite verified that the node was mostly correct
+  - So we need a way to understand what the system is doing in prod
+    - Which can, in turn, drive new tests
+  - In a way, good monitoring is like continuous testing
+  - Want high-frequency monitoring
+    - Production behaviors often take place on 1ms scales
+      - TCP incast
+      - ~1ms resolution
+    - Ops response time, in the limit, scales linearly with observation latency
+      - ~1 second end to end latency
+    - Ideally, millisecond latencies, maybe ms resolution too
+  - Sometimes you can tolerate 60s
+  - And for capacity planning, hourly/daily seasonality is more useful
+  - Instrumentation should be tightly coupled to the app
+    - Measure only what matters
+      - Responding to requests is important
+      - Nodes are essentially irrelevant
+    - Key metrics for most systems
+      - Apdex: successful response WITHIN latency SLA
+      - Latency profiles: 0, 0.5, 0.95, 0.99, 1
+      - Overall throughput
+      - Queue statistics
+      - Subjective experience of other systems latency/throughput
+        - The DB might think it's healthy, but clients could see it as slow
+        - Combinatorial explosion--best to use this when drilling into a failure
+    - You probably have to write this instrumentation yourself
+  - Out-of-the-box monitoring usually doesn't measure what really matters: your
+    app's behavior
+    - But it can be really useful in tracking down causes of problems
+    - Host metrics like CPU, disk, etc
+      - Super useful in identifying latency outliers
+  - Coolest: distributed tracing infra (Zipkin, Dapper, etc)
+    - Significant time investment
 
 ### Shadow traffic
 
+- Load tests are only useful insofar as the simulated load matches the actual
+  load
+- Consider dumping production traffic
+  - Awesome: kill a process with SIGUSR1, it dumps five minutes of request load
+  - Awesome: tcpdump/tcpreplay harnesses for requests
+  - Awesome: shadowing live prod traffic to your staging/QA nodes
+
+### Versioning
+
+- Protocol versioning is, as far as I know, a wide-open problem
+  - Do include a version tag with all messages
+  - Do include compatibility logic
+  - Inform clients when their request can't be honored
+    - And instrument this so you know which systems have to be upgraded
+
+### Rollouts
+
+- Spend the time to get automated, reliable deploys
+  - Amplifies everything else you do
+  - Have nodes smoothly cycle through to prevent traffic interruption
+  - Inform load balancer that they're going out of rotation
+  - Coordinate to prevent cascading failures
+- Roll out only to a fraction of load or fraction of users
+  - Either revert or roll forward when you see errors
+  - Gradually ramp up number of users on the new software
+  - Consider shadowing traffic in prod and comparing old/new versions
+
+### Feature flags
+
+- A lot of your software's features can degrade piecewise
+- When a feature is problematic, disable it
+- Use your coordination service to decide which codepaths to enable
+- When things go wrong, you can *tune* the system's behavior
+  - When coordination service is down, fail *safe*!
+
 ### Oh God, queues
+
+- Every queue is a place for things to go horribly, horribly wrong
+  - No node has unbounded memory. Your queues *must* be bounded
+  - But how big? Nobody knows
+  - Instrument your queues in prod to find out
+- Queues exist to smooth out fluctuations in load
+  - If your load is higher than capacity, no queue will save you
+  - Shed load or apply backpressure when queues become full
+  - Instrument this
+    - When load-shedding occurs, alarm bells should ring
+    - Backpressure is visible as queue latency
+      - Latency should be on the order of fluctuation timescales
+  - Instrument queue depths
+    - High depths is a clue that you need to add node capacity
+    - Raising the queue size can be tempting, but is a vicious cycle
+  - All of this is HARD. I don't have good answers for you
+    - Ask Jeff Hodges why it's hard: see his RICON West 2014 talk
