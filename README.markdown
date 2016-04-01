@@ -1,20 +1,16 @@
-# Crashlanding in the Asteroid Belt
-
-## An introduction to distributed systems
+# An introduction to distributed systems
 
 This course aims to introduce software engineers to the practical basics of
-distributed systems. We'll keep the course small enough so that everyone can
-talk, and include plenty of time for discussion and back-and-forth learning.
-Participants will gain an intuitive understanding of key distributed systems
-terms, have a toolkit for reasoning about their own consensus and ordering
-problems, and understand the landscape of modern distributed systems.
-
+distributed systems, through lecture and discussion.  Participants will gain an
+intuitive understanding of key distributed systems terms, have a toolkit for
+reasoning about their own consensus and ordering problems, and understand the
+landscape of modern distributed systems.
 
 
 ## What makes a thing distributed?
 
 Lamport, 1987:
-
+ 
 >  A distributed system is one in which the failure of a computer
 >  you didn't even know existed can render your own computer
 >  unusable.
@@ -30,17 +26,17 @@ Lamport, 1987:
   - Same goes for desktop web browsers
   - It's not just servers--it's clients too!
 - More generally: distributed systems are
-  - Made up of parts
-  - Which interact
+  - Made up of parts which interact
   - Slowly
-  - Whatever "slow" means for you
+  - And often unreliably
+  - Whatever those mean for you
 - So also:
-  - X86 NUMA architectures
+  - Redundant CPUs in an airplane
   - ATMs and Point-of-Sale terminals
   - Space probes
   - Paying bills
   - Doctors making referrals
-  - Drunk friends texting trying to make plans via text message
+  - Drunk friends trying to make plans via text message
   - Every business meeting ever
 
 ## Nodes and networks
@@ -48,19 +44,27 @@ Lamport, 1987:
 - We call each part of a distributed system a *node*
   - Also known as *processes*, *agents*, or *actors*
 
-### Nodes as linearization points
+### Nodes
 
 - Characteristic latency
   - Operations inside a node are "fast"
   - Operations between nodes are "slow"
   - What's fast or slow depends on what the system does
-- A node could *itself* be a distributed system
-  - But for the purposes of analysis, we say it's a single coherent process
-  - Things on a node appear to occur in a well-defined order
+- Nodes are coherent
+  - You know when problems occur
+  - Things effectively happen in order
   - Typically modeled as some kind of single-threaded state machine
-- Formal models
+- A node could *itself* be a distributed system
+  - But so long as that system as a whole provides "fast, coherent"
+    operations, we can treat it as a single node.
+- Formal models for processes
+  - Pi calculus
+  - Ambient calculus
+  - Communicating Sequential Processes
+- Formal models for node failure
   - Crash-stop
   - Crash-recover
+  - Crash-amnesia
   - Byzantine
 
 ### Networks as message flows
@@ -68,6 +72,7 @@ Lamport, 1987:
 - Nodes interact via a *network*
   - Humans interact via spoken words
   - Particles interact via fields
+  - Computers interact via IP, or UDP, or SCTP, or ...
 - We model those interactions as discrete *messages* sent between nodes
 - Messages take *time* to propagate
   - This is the "slow" part of the distributed system
@@ -77,8 +82,8 @@ Lamport, 1987:
 
 - We can represent the interaction of nodes and the network as a diagram
   - Time flows up
-  - Nodes are worldlines separate by space
-  - Messages as lines *connecting* nodes
+  - Nodes are vertical lines separated by space
+  - Messages as slanted paths *connecting* nodes
 
 ### Synchronous networks
 
@@ -108,11 +113,11 @@ Lamport, 1987:
   - Delay
   - Drop
   - Reorder
+- Drops and delays are indistinguishible
 - Byzantine networks are allowed to mess with messages *arbitrarily*
   - Including rewriting their content
   - They mostly don't happen in real networks
     - Mostly
-- Drops and delays are indistinguishible
 
 ## Low level protocols
 
@@ -157,14 +162,14 @@ Lamport, 1987:
 
 - When a system is split into independent parts, we still want some kind of
   *order* for events
+- Clocks help us order things: first this, THEN that
 
 ### Wall Clocks
 
-- In theory, a process clock gives you a partial order on system events
+- In theory, the operating system clock gives you a partial order on system events
   - Caveat: NTP is probably not as good as you think
   - Caveat: Definitely not well-synced between nodes
   - Caveat: Hardware can drift
-  - Caveat: Administrators can drift
   - Caveat: By *centuries*
   - Caveat: POSIX time is not monotonic by *definition*
   - Caveat: The timescales you want to measure may not be attainable
@@ -196,49 +201,69 @@ Lamport, 1987:
     - A in causal past of B
     - B in causal past of A
 - Pragmatically: the past is shared; the present is independent
-  - Only independent states need to be preserved
-  - States which led to new states can be discarded
+  - Only "present", independent states need to be preserved
+  - Ancestor states can be discarded
   - Lets us garbage-collect the past
 - O(processes) in space
   - Requires coordination for GC
-  - Or sacrifice correctness and prune old entries
-
-### Dotted Version Vectors
-
-- Basically: better vector clocks
-- Still a partial order, but orders *more* events
-- Reduces issues with sibling explosion
+  - Or sacrifice correctness and prune old vclock entries
+- Variants
+  - Dotted Version Vectors - for client/server systems, orders *more* events
+  - Interval Tree Clocks - for when processes come and go
 
 ### GPS & Atomic Clocks
 
 - Much better than NTP
   - Globally distributed total orders on the scale of milliseconds
   - Can do one possibly conflicting thing per uncertainty window
-- Only people with this right now are Google Spanner
+- Only people with this right now are Google
+  - Spanner: globally distributed strongly consistent transactions
   - And they're not sharing
 - More expensive than you'd like
-  - Vendors can get it wrong
-    - Need multiple sources: vendors can get it wrong
-  - I don't know who's doing it yet, but I'd bet dollars to donuts every major
-    datacenter in the future will offer dedicated HW interfaces for
-    bounded-accuracy time.
+  - Several hundred per GPS receiver
+  - Atomic clocks for local corroboration: $$$$?
+  - Need multiple types of GPS: vendors can get it wrong
+  - I don't know who's doing it yet, but I'd bet datacenters in the
+    future will offer dedicated HW interfaces for bounded-accuracy time.
+
+
+## Review
+
+We've covered the fundamental primitives of distributed systems. Nodes
+exchange messages through a network, and both nodes and networks can fail in
+various ways. Protocols like TCP and UDP give us primitive channels for
+processes to communicate, and we can order events using clocks. Now, we'll
+discuss some high-level *properties* of distributed systems.
+
 
 
 
 ## Availability
 
-- Availability is the set of successful operations out of attempted operations
+- Availability is basically the fraction of attempted operations which succeed.
 
 ### Total availability
 
-- Naieve: every operation succeeds
-- In consistency lit: every operation against a non-failing node succeeds
+- Naive: every operation succeeds
+- In consistency lit: every operation on a non-failing node succeeds
   - Nothing you can do about the failing nodes
 
 ### Sticky availability
 
 - Every operation against a non-failing node succeeds
   - With the constraint that clients always talk to the same nodes
+
+### High availability
+
+- Better than if the system *weren't* distributed.
+- e.g. tolerant of up to f failures, but no more
+- Maybe some operations fail
+
+### Majority available
+
+- Operations succeed *if* they occur on a node which can communicate
+  with a majority of the cluster
+- Operations against minority components may fail
 
 ### Quantifying availability
 
@@ -256,7 +281,7 @@ Lamport, 1987:
     - "We achieved 99.999 apdex for the year"
   - And on finer timescales!
     - "Apdex for the user service just dropped to 0.5; page ops!"
-- Ideally: integral of suffering inflicted by your service?
+- Ideally: integral of happiness delivered by your service?
 
 
 ## Consistency
@@ -265,36 +290,35 @@ Lamport, 1987:
 
 ### Monotonic Reads
 
-- Once I read a value, any successive read will return a causally consequent
-  state from that read.
+- Once I read a value, any subsequent read will return that state or later values
 
 ### Monotonic Writes
 
-- If I make a write, any subsequent writes I make will take place against a
-  causally consequent value from my prior write.
+- If I make a write, any subsequent writes I make will take place *after* the
+  first write
 
 ### Read Your Writes
 
-- Once I write a value, any successive read will return a causally consequent
-  state from that write.
+- Once I write a value, any subsequent read I perform will return that write
+  (or later values)
 
 ### Writes Follow Reads
 
-- Once I read a value, any successive write will take place against a causally
-  consequent value from the read.
+- Once I read a value, any subsequent write will take place after that read
 
 ### Serializability
 
-- All operations appear to execute atomically
+- All operations (transactions) appear to execute atomically
+- Every process agrees on operation order
 
 ### Causal consistency
 
 - Suppose operations can be linked by a DAG of causal relationships
   - A write that follows a read, for instance, is causally related
     - Assuming the process didn't just throw away the read data
-  - Operations not linked by DAG are *concurrent*
-- Constraint: all processes agree on the order of operations that are causally
-  related
+  - Operations not linked in that DAG are *concurrent*
+- Constraint: before a process can execute an operation, all its precursors
+  must have executed on that node
 - Concurrent ops can be freely reordered
 
 ### Sequential consistency
@@ -307,17 +331,17 @@ Lamport, 1987:
 - All operations appear to execute atomically
 - Every process agrees on the order of operations
 - Every operation appears to take place *between* its invocation and completion
+  times
+- Real-time, external constraints let us build very strong systems
 
 ### ACID isolation levels
 
 - ANSI SQL's ACID isolation levels are weird
-  - Basically codified whatever weird tradeoffs the various vendors were making
+  - Basically codified the effects of existing vendor implementations
   - Definitions in the spec are ambiguous
-    - Two interpretations
-      - *anomaly interpretation*
-      - *preventative interpretation* (stronger)
 - Adya 1999: Weak Consistency: A Generalized Theory and Optimistic
   Implementations for Distributed Transactions
+  - Each ANSI SQL isolation level prohibits a weird phenomenon
   - Read Uncommitted
     - Prevents P0: *dirty writes*
       - w1(x) ... w2(x)
@@ -347,15 +371,17 @@ Lamport, 1987:
       - At commit time, cursor is upgraded to a writelock
     - Prevents lost-update
   - Snapshot Isolation
-    - Transactions always read from a snapshot of committed data a logical time
-      when the transaction begins
-    - Commit can only occur if no other transaction with an overlapping
-      [start..commit] interval has written to any of the objects written
-
+    - Transactions always read from a snapshot of committed data, taken before
+      the transaction begins
+    - Commit can only occur if no other committed transaction with an
+      overlapping [start..commit] interval has written to any of the objects
+      *we* wrote
+      - First-committer-wins
 
 
 ## Tradeoffs
 
+- Ideally, we want total availability and linearizability
 - Consistency requires coordination
   - If every order is allowed, we don't need to do any work!
   - If we want to disallow some orders of events, we have to exchange messages
@@ -366,7 +392,7 @@ Lamport, 1987:
 
 ### Availability and Consistency
 
-- CAP Theorem: Linearizable systems cannot have total availability
+- CAP Theorem: Linearizability OR total availability
 - But wait, there's more!
   - Bailis 2014: Highly Available Transactions: Virtues and Limitations
   - Other theorems disallow totally or sticky available...
@@ -397,15 +423,15 @@ Lamport, 1987:
     - Node faults in a search engine can cause some results to go missing
     - Updates may be reflected on some nodes but not others
       - Consider an AP system split by a partition
-      - Eventually things will resolve
-      - But meanwhile, other nodes can do reads that won't see the new data
+      - You can write data that some people can't read
     - Streaming video degrades to preserve low latency
   - This is not an excuse to violate your safety invariants
     - Just helps you quantify how much you can *exceed* safety invariants
-    - e.g. "We provide RYW 99.9% of the time"
+    - e.g. "99% of the time, you can read 90% of your prior writes"
   - Strongly dependent on workload, HW, topology, etc
   - Can tune harvest vs yield on a per-request basis
    - "As much as possible in 10ms, please"
+   - "I need everything, and I understand you might not be able to answer"
 
 ### Hybrid systems
 
@@ -419,8 +445,13 @@ Lamport, 1987:
   - Small data is usually critical
   - Linearizable user ops, causally consistent social feeds
 
+### Review
 
-
+Availability is a measure of how often operations succeed. Consistency models
+are the rules that govern what operations can happen and when. Stronger
+consistency models generally come at the cost of performance and availability.
+Next, we'll talk about different ways to build systems, from weak to strong
+consistency.
 
 
 ## Avoid Consensus Wherever Possible
@@ -433,21 +464,29 @@ Lamport, 1987:
   - For that matter, what's "monotonic"?
 - Montonicity, informally, is retraction-free
   - Deductions from partial information are never invalidated by new information
-  - Both relational algebra and (some) Datalog are monotone
+  - Both relational algebra and Datalog without negation are monotone
 - Ameloot, et al, 2011: Relational transducers for declarative networking
   - Theorem which shows coordination-free networks of processes unaware of the
-    network extent can only compute only monotone queries in Datalog.
-  - Honestly, the formalism of temporal logic is still pretty tough for me
+    network extent can only compute only monotone queries in Datalog
+    - This is not an easy read
   - "Coordination-free" doesn't mean no communication
     - Algo succeeds even in face of arbitrary horizontal partitions
+- In very loose practical terms
+  - Try to phrase your problem such that you only *add* new facts to the system
+  - When you compute a new fact based on what's currently known, can you ensure
+    that fact will never be retracted?
+  - Consider special "sealing facts" that mark a block of facts as complete
+  - These "grow-only" algorithms are usually easier to implement
+  - Likely tradeoff: incomplete reads
 - Bloom language
   - Unordered programming with flow analysis
-  - Can hint where coordination *would* be required
+  - Can tell you where coordination *would* be required
 
 
 ### Gossip
 
-- Useful for service discovery, performance tuning, self-healing, etc
+- Message broadcast system
+- Useful for cluster management, service discovery, CDNs, etc
 - Very weak consistency
 - Very high availability
 - Global broadcast
@@ -467,6 +506,7 @@ Lamport, 1987:
 ### CRDTs
 
 - Order-free datatypes that converge
+  - Counters, sets, maps, etc
 - Tolerate dupes, delays, and reorders
 - Unlike sequentially consistent systems, no "single source of truth"
 - But unlike naive eventually consistent systems, never *lose* information
@@ -481,6 +521,14 @@ Lamport, 1987:
     - Associative: m(x1, m(x2, x3)) = m(m(x1, x2), x3)
     - Commutative: m(x1, x2) = m(x2, x1)
     - Idempotent:  m(x1, x1) = m(x1)
+- Easy to build. Easy to reason about. Gets rid of all kinds of headaches.
+  - Did communication fail? Just retry! It'll converge!
+  - Did messages arrive out of order? It's fine!
+  - How do I synchronize two replicas? Just merge!
+- Downsides
+  - Some algorithms *need* order and can't be expressed with CRDTs
+  - Reads may be arbitrarily stale
+  - Higher space costs
 
 ### HATs
 
@@ -496,7 +544,8 @@ Lamport, 1987:
   - Can ensure convergence given arbitrary finite delay ("eventual consistency")
   - Good candidates for geographically distributed systems
   - Probably best in concert with stronger transactional systems
-  - See also: COPS, Swift, Eiger, etc
+  - See also: COPS, Swift, Eiger, Calvin, etc
+
 
 ## Fine, We Need Consensus, What Now?
 
@@ -512,9 +561,9 @@ Lamport, 1987:
   - Three invariants:
     - Nontriviality: Only values proposed can be learned
     - Safety: At most one value can be learned
-    - Liveness: If a proposer p, a learner l, and a set of N-F are non-faulty
-      and can communicate with each other, and if p proposes a value, l will
-      eventually learn a value.
+    - Liveness: If a proposer p, a learner l, and a set of N-F acceptors are
+      non-faulty and can communicate with each other, and if p proposes a
+      value, l will eventually learn a value.
 
 - Whole classes of systems are *equivalent* to the consensus problem
   - So any proofs we have here apply to those systems too
@@ -522,9 +571,12 @@ Lamport, 1987:
   - Ordered logs
   - Replicated state machines
 
-- FLP tells us consensus is impossible
+- FLP tells us consensus is impossible in asynchronous networks
   - Kill a process at the right time and you can break *any* consensus algo
+  - True but not as bad as you might think
+  - Realistically, networks work *often enough* to reach consensus
   - Moreover, FLP assumes deterministic processes
+    - Real computers *aren't* deterministic
     - Ben-Or 1983: "Another Advantage of free choice"
       - Nondeterministic algorithms *can* achieve consensus
 
@@ -544,8 +596,17 @@ Lamport, 1987:
 
 - Paxos is the Gold Standard of consensus algorithms
   - Lamport 1970 - The Part Time Parliament
-  - Lamport - Paxos Made Easy
-    - OK, if you didn't get it the first time, here's the simple version
+    - Written as a description of an imaginary Greek democracy
+  - Lamport 2001 - Paxos Made Simple
+    - "The Paxos algorithm for implementing a fault-tolerant distributed system
+      has been regarded as difficult to understand, perhaps because the
+      original presentation was Greek to many readers [5]. In fact, it is among the
+      simplest and most obvious of distributed algorithms... The last section
+      explains the complete Paxos algorithm, which is obtained by the straightforward
+      application of consensus to the state machine approach for building a
+      distributed system—an approach that should be well-known, since it is the
+      subject of what is probably the most often-cited article on the theory of
+      distributed systems [4]."
   - Google 2007 - Paxos Made Live
     - Notes from productionizing Chubby, Google's lock service
   - Van Renesse 2011 - Paxos Made Moderately Complex
@@ -560,7 +621,8 @@ Lamport, 1987:
   - Generalized Paxos
   - It's not always clear which of these optimizations to use, and which
     can be safely combined
-- Used in a variety of production systems, often to *build* a replicated log
+  - Each implementation uses a slightly different flavor
+- Used in a variety of production systems
   - Chubby
   - Cassandra
   - Riak
@@ -577,9 +639,8 @@ Lamport, 1987:
 - Junqueira, Reed, and Serafini 2011 - Zab: High-performance broadcast for
   primary-backup systems
 - Differs from Paxos
-- Provides sequential consistency
+- Provides sequential consistency (linearizable writes, lagging ordered reads)
   - Useful because ZK clients typically want fast local reads
-    - But they're expected to lag somewhat
   - But there's also a SYNC command that guarantees real-time visibility
   - (SYNC + op) allows linearizable reads as well
 - Again, majority quorum, 5 or 7 nodes
@@ -597,13 +658,23 @@ Lamport, 1987:
 - Ongaro & Ousterhout 2014 - In Search of an Understandable Consensus Algorithm
 - Lamport says it's easy, but we still have trouble grokking Paxos
   - What if there were a consensus algorithm we could actually understand?
-- Paxos approaches independent decisions when what we *want* is FSMs
-  - Maintains a replicated *log* instead
+- Paxos approaches independent decisions when what we *want* is state machines
+  - Maintains a replicated *log* of state machine transitions instead
 - Also builds in cluster membership transitions, which is *key* for real systems
+- Very new, but we have a TLA+ proof of the core algorithm
 - Can be used to write arbitrary sequential or linearizable state machines
-- Very new, no *thorough* formal proof yet
-  - But nobody's objected to Diego's proof sketch, so far
+  - RethinkDB
+  - etcd
+  - Consul
 
+## Review
+
+Systems which only add facts, not retract them, require less coordination to
+build. We can use gossip systems to broadcast messages to other processes,
+CRDTs to merge updates from our peers, and HATs for weakly isolated
+transactions. Serializability and linearizability require *consensus*, which we
+can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
+*scales* of distributed systems.
 
 
 
@@ -615,7 +686,9 @@ Lamport, 1987:
 
 ### Multicore systems
 
-- Multicore (and especially NUMA) architectures are a distributed system
+- Multicore (and especially NUMA) architectures are sort of like a distributed system
+  - Nodes don't fail pathologically, but message exchange is slow!
+  - Synchronous network provided by a bus (e.g. Intel QPI)
   - Whole complicated set of protocols in HW & microcode to make memory look
     sane
   - Non-temporal store instructions (e.g. MOVNTI)
@@ -624,12 +697,12 @@ Lamport, 1987:
     - Introduce a serialization point against load/store instructions
     - Characteristic latencies: ~100 cycles / ~30 ns
       - Really depends on HW, caches, instructions, etc
-  - Compare-and-Swap (sequentially consistent modification of memory)
+  - CMPXCHG Compare-and-Swap (sequentially consistent modification of memory)
   - LOCK
     - Lock the full memory subsystem across cores!
 - But those abstractions come with costs
-  - Read Mechanical Sympathy!
-  - Hardware lock elision is nascent
+  - Hardware lock elision may help but is nascent
+  - Blog: Mechanical Sympathy
   - Avoid coordination between cores wherever possible
   - Context switches (process or thread!) can be expensive
   - Processor pinning can really improve things
@@ -665,7 +738,7 @@ Lamport, 1987:
 
 - You deploy worldwide for two reasons
   - End-user latency
-    - Users can detect ~10ms lag, will tolerate ~100ms
+    - Humans can detect ~10ms lag, will tolerate ~100ms
       - SF--Denver: 50ms
       - SF--Tokyo: 100 ms
       - SF--Madrid: 200 ms
@@ -680,8 +753,10 @@ Lamport, 1987:
     - Maybe 4 rounds all the time if you have a bad Paxos impl (e.g. Cassandra)
   - So if you do Paxos between datacenters, be ready for that cost!
   - Because the minimum latencies are higher than users will tolerate
+    - Cache cache cache
+    - Queue writes and relay asynchronously
     - Consider reduced consistency guarantees in exchange for lower latency
-    - CRDTs can always give you safe local reads
+    - CRDTs can always give you safe local writes
     - Causal consistency and HATs can be good calls here
 - What about strongly consistent stuff?
   - Chances are a geographically distributed service has natural planes of
@@ -691,10 +766,18 @@ Lamport, 1987:
   - Pin/proxy updates to home datacenter
     - Which is hopefully the closest datacenter!
     - But maybe not! I believe Facebook still pushes all writes through 1 DC!
-  - Where sequential/serializable consistency is OK, cache reads locally!
+  - Where sequential consistency is OK, cache reads locally!
     - You probably leverage caching in a single DC already
 
+### Review
 
+We discussed three characteristic scales for distributed systems: multicore
+processors coupled with a synchronous network, computers linked by a LAN, and
+datacenters linked by the internet or dedicated fiber. CPU consequences are
+largely performance concerns: knowing how to minimize coordination. On LANs,
+latencies are short enough for many network hops before users take notice. In
+geographically replicated systems, high latencies drive eventually consistent
+and datacenter-pinned solutions.
 
 ## A Pattern Language
 
@@ -747,13 +830,13 @@ Lamport, 1987:
 
 ### Backups
 
-- Backups are essentially sequential consistency
+- Backups are essentially sequential consistency, BUT you lose a window of ops.
   - When done correctly
   - Some backup programs don't snapshot state, which leads to FS or DB
     corruption
     - Broken fkey relationships, missing files, etc...
   - Allow you to recover in a matter of minutes to days
-  - But more than recovery, they allow you to step back in time
+  - But more than fault recovery, they allow you to step back in time
     - Useful for recovering from logical faults
       - Distributed DB did its job correctly, but you told it to delete key
         data
@@ -809,7 +892,9 @@ Lamport, 1987:
   - How big can a single part get before overwhelming a node?
   - How do we enforce that limit *before* it sinks a node in prod?
     - Then sinks all the other nodes, one by one, as the system rebalances
-- Good candidate for ZK, Etcd, and so on
+- Allocating shards to nodes
+  - Often built in to DB
+  - Good candidate for ZK, Etcd, and so on
   - See Boundary's Ordasity
 
 ### Immutable values
@@ -820,12 +905,12 @@ Lamport, 1987:
   - Minimal repacking on disk
 - Useful for Cassandra, Riak, any LSM-tree DB.
   - Or for logs like Kafka!
-- Extremely high availability and durability, tunable write latency
-- Low read latencies: can respond from closest replica
-  - Especially valuable for geographic distribution
 - Easy to reason about: either present or it's not
   - Eliminates all kinds of transactional headaches
   - Extremely cachable
+- Extremely high availability and durability, tunable write latency
+  - Low read latencies: can respond from closest replica
+  - Especially valuable for geographic distribution
 - Requires garbage collection!
   - But there are good ways to do this
 
@@ -854,7 +939,8 @@ Lamport, 1987:
 - The problem is composed of interacting logical pieces
 - Pieces have distinct code, performance, storage needs
   - Monolithic applications are essentially *multitenant* systems
-    - Multitenancy is fucking hard
+    - Multitenancy is tough
+    - But its often okay to run multiple logical "services" in the same process
 - Divide your system into logical services for discete parts of the domain
   model
   - OO approach: each *noun* is a service
@@ -870,44 +956,80 @@ Lamport, 1987:
     - Services for verbs is a good way to enforce *transformation invariants*
     - So have a basic User service, which is used *by* an Auth service
   - Where you draw the line... well that's tricky
+    - Services come with overhead: have as few as possible
     - Consider work units
-    - Consider which services have varying availability guarantees
+    - Separate services which need to scale independently
     - Colocate services with tight dependencies and tight latency budgets
     - Colocate services which use complementary resources (e.g. disk and CPU)
-      - Run memcache on rendering nodes
-      - Use Mesos to automatically allocate services to HW?
+      - By hand: Run memcache on rendering nodes
+      - Newer shops: Google Borg, Mesos, Kubernetes
 
 ### Structure Follows Social Spaces
 
+- Production software is a fundamentally social artifact
 - Natural alignment: a team or person owns a specific service
+  - Jo Freeman, "The Tyranny of Structurelessness"
+    - Responsibility and power should be explicit
+    - Rotate people through roles to prevent fiefdoms
+      - Promotes information sharing
+    - But don't rotate too often
+      - Ramp-up costs in software are very high
+- As the team grows, its mission and thinking will formalize
+  - So too will services and their boundaries
+  - Gradually accruing body of assumptions about service relation to the world
+  - Punctuated by rewrites to respond to changing external pressures
+  - Tushman & Romanelli, 1985: Organizational Evolution
 - Inter-team communication goes hand in hand with inter-service communication
+  - Conway's law
+  - Invest time in good team relationships for neighbor services
+  - Or conversely, choose teams that work well together to implement
+    dependencies
   - Consider team size and codebase complexity when sizing services
-- Libraries can be orthogonal to services
+- Services can be libraries
+  - Initially, *all* your services should be libraries
   - Perfectly OK to depend on a user library in multiple services
-  - Libraries can become services later
+  - Libraries with well-defined boundaries are easy to extract into
+    services later
 - Services probably need a client library
   - That library might be "Open a socket" or an HTTP client
     - Haproxy is an excellent router for both HTTP and TCP services
     - Leverage HTTP headers!
       - Accept headers for versioning
       - Lots of support for caching and proxying
-  - But eventually, library might include mock IO
+  - Eventually, library might include mock IO
     - Service team is responsible for testing that the service provides an API
     - When the API is known to be stable, every client can *assume* it works
     - Removes the need for network calls in test suites
     - Dramatic reduction in test runtime and dev environment complexity
 
+### Review
 
+When possible, try to use a single node instead of a distributed system. Accept
+that some failures are unavoidable: SLAs and apologies can be cost-effective.
+To handle catastrophic failure, we use backups. To improve reliability, we
+introduce redundancy. To scale to large problems, we divide the problem into
+shards. Immutable values are easy to store and cache, and can be referenced by
+mutable identies, allowing us to build strongly consistent systems at large
+scale. As software grows, different components must scale independently,
+and we break out libraries into distinct services. Service structure goes
+hand-in-hand with teams.
 
 ## Production Concerns
 
 - More than design considerations
 - Proofs are important, but real systems do IO
-- Distributed systems are supported by your culture
+
+### Distributed systems are supported by your culture
+
+- Understanding a distributed system in production requires close cooperation
+  of people with many roles
   - Development
   - QA
   - Operations
-  - (These are all aspects of the same process)
+- Empathy matters
+  - Developers have to care about production
+  - Ops has to care about implementation
+  - Good communication enables faster diagnosis
 
 ### Test everything
 
@@ -919,43 +1041,55 @@ Lamport, 1987:
   - Ideally, you want a *slider* for rigorousness
   - Quick example-based tests that run in a few seconds
   - More thorough property-based tests that can run overnight
-  - Establish invariants
   - Be able to simulate an entire cluster in-process
   - Control concurrent interleavings with simulated networks
+  - Automated hardware faults
 
 ### "It's Slow"
 
-- The worst bug you'll ever hear is "it's slow"
+- Jeff Hodges: The worst bug you'll ever hear is "it's slow"
   - Happens all the time, really difficult to localize
   - Because the system is distributed, have to profile multiple nodes
     - Not many profilers are built for this
+    - Sigelman et al, 2010: Dapper, a Large-Scale Distributed Systems Tracing
+      Infrastructure
+    - Zipkin
+    - Big tooling investment
   - Profilers are good at finding CPU problems
     - But high latency is often a sign of IO, not CPU
     - Disk latency
     - Network latency
     - GC latency
     - Queue latency
+  - Try to localize problem using application-level metrics
+    - Then dig in to process and OS performance
 
 ### Instrument everything
 
-- Slowness (and outright errors) in prod stem from interacting systems
-  - Because your thorough test suite verified that the node was mostly correct
+- Slowness (and outright errors) in prod stem from the interactions *between*
+  systems
+  - Why? Because your thorough test suite probably verified that the single
+    system was mostly correct
   - So we need a way to understand what the system is doing in prod
+    - In relation to its dependencies
     - Which can, in turn, drive new tests
   - In a way, good monitoring is like continuous testing
+   - But not a replacement: these are distinct domains
+   - Both provide assurance that your changes are OK
   - Want high-frequency monitoring
-    - Production behaviors often take place on 1ms scales
+    - Production behaviors can take place on 1ms scales
       - TCP incast
-      - ~1ms resolution
+      - ~1ms resolution *ideally*
     - Ops response time, in the limit, scales linearly with observation latency
       - ~1 second end to end latency
     - Ideally, millisecond latencies, maybe ms resolution too
-  - Sometimes you can tolerate 60s
+      - Usually cost-prohibitive; back off to 1s or 10s
+      - Sometimes you can tolerate 60s
   - And for capacity planning, hourly/daily seasonality is more useful
   - Instrumentation should be tightly coupled to the app
     - Measure only what matters
       - Responding to requests is important
-      - Nodes are essentially irrelevant
+      - Node CPU doesn't matter as much
     - Key metrics for most systems
       - Apdex: successful response WITHIN latency SLA
       - Latency profiles: 0, 0.5, 0.95, 0.99, 1
@@ -965,12 +1099,15 @@ Lamport, 1987:
         - The DB might think it's healthy, but clients could see it as slow
         - Combinatorial explosion--best to use this when drilling into a failure
     - You probably have to write this instrumentation yourself
+      - Invest in a metrics library
   - Out-of-the-box monitoring usually doesn't measure what really matters: your
     app's behavior
     - But it can be really useful in tracking down causes of problems
     - Host metrics like CPU, disk, etc
       - Super useful in identifying latency outliers
-  - Coolest: distributed tracing infra (Zipkin, Dapper, etc)
+    - Where your app does something common (e.g. rails apps) tools like New
+      Relic work well
+  - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
     - Significant time investment
 
 ### Shadow traffic
@@ -992,25 +1129,30 @@ Lamport, 1987:
 
 ### Rollouts
 
+- Rollouts are often how you fix problems
 - Spend the time to get automated, reliable deploys
   - Amplifies everything else you do
   - Have nodes smoothly cycle through to prevent traffic interruption
   - Inform load balancer that they're going out of rotation
   - Coordinate to prevent cascading failures
 - Roll out only to a fraction of load or fraction of users
-  - Either revert or roll forward when you see errors
   - Gradually ramp up number of users on the new software
+  - Either revert or roll forward when you see errors
   - Consider shadowing traffic in prod and comparing old/new versions
+    - Good way to determine if new code is faster & correct
 
 ### Feature flags
 
 - A lot of your software's features can degrade piecewise
 - When a feature is problematic, disable it
-- Use your coordination service to decide which codepaths to enable
+- Use a highly available coordination service to decide which codepaths to
+  enable
+  - This service should have minimal dependencies
+    - Don't use the primary DB
 - When things go wrong, you can *tune* the system's behavior
   - When coordination service is down, fail *safe*!
 
-### Oh God, queues
+### Oh no, queues
 
 - Every queue is a place for things to go horribly, horribly wrong
   - No node has unbounded memory. Your queues *must* be bounded
@@ -1018,13 +1160,24 @@ Lamport, 1987:
   - Instrument your queues in prod to find out
 - Queues exist to smooth out fluctuations in load
   - If your load is higher than capacity, no queue will save you
-  - Shed load or apply backpressure when queues become full
-  - Instrument this
-    - When load-shedding occurs, alarm bells should ring
-    - Backpressure is visible as queue latency
-      - Latency should be on the order of fluctuation timescales
+    - Shed load or apply backpressure when queues become full
+    - Instrument this
+      - When load-shedding occurs, alarm bells should ring
+      - Backpressure is visible as upstream latency
+        - Latency should be smaller than fluctuation timescales
   - Instrument queue depths
     - High depths is a clue that you need to add node capacity
     - Raising the queue size can be tempting, but is a vicious cycle
   - All of this is HARD. I don't have good answers for you
     - Ask Jeff Hodges why it's hard: see his RICON West 2014 talk
+
+
+## Review
+
+Running distributed systems requires cooperation between developers, QA, and
+operations engineers. Static analysis, and a test suite including example- and
+property-based tests, can help ensure program correctness, but understanding
+production behavior requires comprehensive instrumentation and alerting. Mature
+distributed systems teams often invest in tooling: traffic shadowing,
+versioning, incremental deploys, and feature flags. Finally, queues require
+special care.
