@@ -1,16 +1,17 @@
 # An introduction to distributed systems
 
-This course aims to introduce software engineers to the practical basics of
-distributed systems, through lecture and discussion.  Participants will gain an
-intuitive understanding of key distributed systems terms, have a toolkit for
-reasoning about their own consensus and ordering problems, and understand the
-landscape of modern distributed systems.
+Copyright 2014, 2016 Kyle Kingsbury
 
+This outline accompanies a 12-16 hour overview class on distributed systems
+fundamentals. The course aims to introduce software engineers to the practical
+basics of distributed systems, through lecture and discussion.  Participants
+will gain an intuitive understanding of key distributed systems terms, an
+overview of the algorithmic landscape, and explore production concerns.
 
 ## What makes a thing distributed?
 
 Lamport, 1987:
- 
+
 >  A distributed system is one in which the failure of a computer
 >  you didn't even know existed can render your own computer
 >  unusable.
