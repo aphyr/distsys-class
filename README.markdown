@@ -310,7 +310,9 @@ discuss some high-level *properties* of distributed systems.
 ### Serializability
 
 - All operations (transactions) appear to execute atomically
-- Every process agrees on operation order
+- In some order
+  - No constraints on what that order is
+  - Perfectly okay to read from the past, for instance
 
 ### Causal consistency
 
@@ -324,8 +326,11 @@ discuss some high-level *properties* of distributed systems.
 
 ### Sequential consistency
 
+- Like causal consistency, constrains possible orders
 - All operations appear to execute atomically
 - Every process agrees on the order of operations
+  - Operations from a given process always occur in order
+  - But nodes can lag behind
 
 ### Linearizability
 
