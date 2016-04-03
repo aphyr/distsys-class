@@ -785,6 +785,9 @@ latencies are short enough for many network hops before users take notice. In
 geographically replicated systems, high latencies drive eventually consistent
 and datacenter-pinned solutions.
 
+
+
+
 ## A Pattern Language
 
 - General recommendations for building distributed systems
@@ -802,15 +805,14 @@ and datacenter-pinned solutions.
 - Rule 1: don't distribute where you don't have to
   - Is this thing small enough to fit on one node?
     - Could we just buy a bigger box?
-  - Can we make the node reliable enough for the service's
   - Can this service tolerate a single node's guarantees?
   - Could we just stand up another one if it breaks?
   - Could manual intervention take the place of the distributed algorithm?
 
-### Use another distributed system
+### Use an existing distributed system
 
 - If we have to distribute, can we push the work onto some other software?
-  - What about a distributed database?
+  - What about a distributed database or log?
   - Can we pay Amazon to do this for us?
   - Conversely, what are the care and feeding costs?
   - How much do you have to learn to use/operate that distributed system?
@@ -818,10 +820,11 @@ and datacenter-pinned solutions.
 ### Never fail
 
 - Buy really expensive hardware
-  - Make changes to software and hardware in a controlled fashion
+- Make changes to software and hardware in a controlled fashion
   - Dry-run deployments against staging environments
-  - Possible to build very reliable networks and machines
-    - At the cost of moving slower, buying more expensive HW, finding talent
+- Possible to build very reliable networks and machines
+  - At the cost of moving slower, buying more expensive HW, finding talent
+  - HW/nework failure still *happens*, but sufficiently rare => low priority
 
 ### Accept failure
 
@@ -832,14 +835,16 @@ and datacenter-pinned solutions.
   - Could insurance cover the damage?
   - Could we just call the customer and apologize?
 - Sounds silly, but may be much cheaper
+  - We can never prevent 100% of system failures
+  - Consciously choosing to recover *above* the level of the system
   - This is how financial companies and retailers do it!
 
 ### Backups
 
 - Backups are essentially sequential consistency, BUT you lose a window of ops.
   - When done correctly
-  - Some backup programs don't snapshot state, which leads to FS or DB
-    corruption
+    - Some backup programs don't snapshot state, which leads to FS or DB
+      corruption
     - Broken fkey relationships, missing files, etc...
   - Allow you to recover in a matter of minutes to days
   - But more than fault recovery, they allow you to step back in time
@@ -998,10 +1003,10 @@ and datacenter-pinned solutions.
     services later
 - Services probably need a client library
   - That library might be "Open a socket" or an HTTP client
-    - Haproxy is an excellent router for both HTTP and TCP services
     - Leverage HTTP headers!
       - Accept headers for versioning
       - Lots of support for caching and proxying
+    - Haproxy is an excellent router for both HTTP and TCP services
   - Eventually, library might include mock IO
     - Service team is responsible for testing that the service provides an API
     - When the API is known to be stable, every client can *assume* it works
@@ -1110,7 +1115,6 @@ hand-in-hand with teams.
     app's behavior
     - But it can be really useful in tracking down causes of problems
     - Host metrics like CPU, disk, etc
-      - Super useful in identifying latency outliers
     - Where your app does something common (e.g. rails apps) tools like New
       Relic work well
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
@@ -1139,6 +1143,9 @@ hand-in-hand with teams.
 - Spend the time to get automated, reliable deploys
   - Amplifies everything else you do
   - Have nodes smoothly cycle through to prevent traffic interruption
+    - This implies you'll have multiple versions of your software running at
+      once
+      - Versioning rears its ugly head
   - Inform load balancer that they're going out of rotation
   - Coordinate to prevent cascading failures
 - Roll out only to a fraction of load or fraction of users
@@ -1170,9 +1177,9 @@ hand-in-hand with teams.
     - Instrument this
       - When load-shedding occurs, alarm bells should ring
       - Backpressure is visible as upstream latency
-        - Latency should be smaller than fluctuation timescales
   - Instrument queue depths
     - High depths is a clue that you need to add node capacity
+      - End to end queue latency should be smaller than fluctuation timescales
     - Raising the queue size can be tempting, but is a vicious cycle
   - All of this is HARD. I don't have good answers for you
     - Ask Jeff Hodges why it's hard: see his RICON West 2014 talk
