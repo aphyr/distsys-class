@@ -804,7 +804,9 @@ and datacenter-pinned solutions.
 
 - Rule 1: don't distribute where you don't have to
   - Is this thing small enough to fit on one node?
-    - Could we just buy a bigger box?
+    - "I have a big data problem"
+      - Softlayer will rent you a box with 3TB of ram for $5000/mo.
+      - Supermicro: 6TB in one box for ~$115,000
   - Can this service tolerate a single node's guarantees?
   - Could we just stand up another one if it breaks?
   - Could manual intervention take the place of the distributed algorithm?
