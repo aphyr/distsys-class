@@ -667,7 +667,7 @@ consistency.
 - Paxos approaches independent decisions when what we *want* is state machines
   - Maintains a replicated *log* of state machine transitions instead
 - Also builds in cluster membership transitions, which is *key* for real systems
-- Very new, but we have a TLA+ proof of the core algorithm
+- Very new, but we have a Coq proof of the core algorithm
 - Can be used to write arbitrary sequential or linearizable state machines
   - RethinkDB
   - etcd
