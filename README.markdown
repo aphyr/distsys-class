@@ -826,7 +826,7 @@ and datacenter-pinned solutions.
   - Dry-run deployments against staging environments
 - Possible to build very reliable networks and machines
   - At the cost of moving slower, buying more expensive HW, finding talent
-  - HW/nework failure still *happens*, but sufficiently rare => low priority
+  - HW/network failure still *happens*, but sufficiently rare => low priority
 
 ### Accept failure
 
