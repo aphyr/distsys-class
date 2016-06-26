@@ -1184,7 +1184,7 @@ hand-in-hand with teams.
       - End to end queue latency should be smaller than fluctuation timescales
     - Raising the queue size can be tempting, but is a vicious cycle
   - All of this is HARD. I don't have good answers for you
-    - Ask Jeff Hodges why it's hard: see his RICON West 2014 talk
+    - Ask Jeff Hodges why it's hard: see his RICON West 2013 talk
 
 
 ## Review
