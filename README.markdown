@@ -2,11 +2,12 @@
 
 Copyright 2014, 2016 Kyle Kingsbury
 
-This outline accompanies a 12-16 hour overview class on distributed systems
-fundamentals. The course aims to introduce software engineers to the practical
-basics of distributed systems, through lecture and discussion.  Participants
-will gain an intuitive understanding of key distributed systems terms, an
-overview of the algorithmic landscape, and explore production concerns.
+This outline accompanies a 12-16 hour [overview class on distributed systems
+fundamentals](http://jepsen.io/training.html). The course aims to introduce
+software engineers to the practical basics of distributed systems, through
+lecture and discussion.  Participants will gain an intuitive understanding of
+key distributed systems terms, an overview of the algorithmic landscape, and
+explore production concerns.
 
 ## What makes a thing distributed?
 
