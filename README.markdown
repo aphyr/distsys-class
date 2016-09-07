@@ -159,7 +159,6 @@ Lamport, 1987:
   - Higher-level protocols impose sanity on underlying chaos
 
 
-
 ## Clocks
 
 - When a system is split into independent parts, we still want some kind of
@@ -687,6 +686,11 @@ can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
 
 ## Characteristic latencies
 
+- Latency is *never* zero
+  - Bandwidth goes up and up but we're bumping up against the physical limits
+    of light and electrons
+  - Latency budget shapes your system design
+     - How many network calls can you afford?
 - Different kinds of systems have different definitions of "slow"
   - Different goals
   - Different algorithms
@@ -787,6 +791,106 @@ geographically replicated systems, high latencies drive eventually consistent
 and datacenter-pinned solutions.
 
 
+## Common distributed systems
+
+### Outsourced heaps
+
+- Redis, memcached, ...
+- Data fits in memory, complex data structures
+- Useful when your language's built-in data structures are slow/awful
+- Excellent as a cache
+- Or as a quick-and-dirty scratchpad for shared state between platforms
+- Not particularly safe
+
+### KV stores
+
+- Riak, Couch, Mongo, Cassandra, RethinkDB, HDFS, ...
+- Often 1,2,3 dimensions of keys
+- O(1) access, sometimes O(range) range scans by ID
+- No strong relationships between values
+- Objects may be opaque or structured
+- Large data sets
+- Often linear scalability
+- Often no transactions
+- Range of consistency models--often optional linearizable/sequential ops.
+
+### SQL databases
+
+- Postgres, MySQL, Percona XtraDB, Oracle, MSSQL, VoltDB, CockroachDB, ...
+- Defined by relational algebra: restrictions of products of records, etc
+- Moderate sized data sets
+- Almost always include multi-record transactions
+- Relations and transactions require coordination, which reduces scalability
+- Many systems are primary-secondary failover
+- Access cost varies depending on indexes
+- Typically strong consistency (SI, serializable, strict serializable)
+
+### Search
+
+- Elasticsearch, SolrCloud, ...
+- Documents referenced by indices
+- Moderate-to-large data sets
+- Usually O(1) document access, log-ish search
+- Good scalability
+- Typically weak consistency
+
+### Coordination services
+
+- Zookeeper, etcd, Consul, ...
+- Typically strong (sequential or linearizable) consistency
+- Small data sets
+- Useful as a coordination primitive for stateless services
+
+### Streaming systems
+
+- Storm, Spark...
+- Usually custom-designed, or toolkits to build your own.
+- Typically small in-memory data volume
+- Low latencies
+- High throughput
+- Weak consistency
+
+### Distributed queues
+
+- Kafka, Kestrel, Rabbit, IronMQ, ActiveMQ, HornetQ, Beanstalk, SQS, Celery, ...
+- Journals work to disk on multiple nodes for redundancy
+- Useful when you need to acknowledge work now, and actually do it later
+- Send data reliably between stateless services
+- The *only* one I know that won't lose data in a partition is Kakfa
+  - Maybe SQS?
+- Queues do not improve end-to-end latency
+  - Always faster to do the work immediately
+- Queues do not improve mean throughput
+  - Mean throughput limited by consumers
+- Queues do not provide total event ordering when consumers are concurrent
+  - Your consumers are almost definitely concurrent
+- Likewise, queues don't guarantee event order with async consumers
+  - Because consumer side effects could take place out of order
+  - So, don't rely on order
+- Queues can offer at-most-once or at-least-once delivery
+  - Anyone claiming otherwise is trying to sell you something
+  - Recovering exactly-once delivery requires careful control of side effects
+  - Make your queued operations idempotent
+- Queues do improve burst throughput
+  - Smooth out load spikes
+- Distributed queues also improve fault tolerance (if they don't lose data)
+  - If you don't need the fault-tolerance or large buffering, just use TCP
+  - Lots of people use a queue with six disk writes and fifteen network hops
+    where a single socket write() could have sufficed
+- Queues can get you out of a bind when you've chosen a poor runtime
+
+### Review
+
+We use data structure stores as outsourced heaps: they're the duct tape of
+distributed systems. KV stores and relational databases are commonly deployed
+as systems of record; KV stores use independent keys and are not well-suited to
+relational data, but offer improved scalability and partial failure vs SQL
+stores, which offer rich queries and strong transactional guarantees.
+Distributed search and coordination services round out our basic toolkit for
+building applications. Streaming systems are applied for continuous,
+low-latency processing of datasets, and tend to look more like frameworks than
+databases. Their dual, distributed queues, focus on the *messages* rather
+than the *transformations*.
 
 
 ## A Pattern Language
@@ -804,10 +908,17 @@ and datacenter-pinned solutions.
 ### Don't distribute
 
 - Rule 1: don't distribute where you don't have to
+  - Local systems have reliable primitives. Locks. Threads. Queues. Txns.
+    - When you move to a distributed system, you have to build from ground up.
   - Is this thing small enough to fit on one node?
     - "I have a big data problem"
       - Softlayer will rent you a box with 3TB of ram for $5000/mo.
-      - Supermicro: 6TB in one box for ~$115,000
+      - Supermicro will sell a 6TB box for ~$115,000 total.
+  - Modern computers are FAST.
+    - Production JVM HTTP services I've known have pushed 50K requests/sec
+      - Parsing JSON events, journaling to disk, pushing to S3
+    - Protocol buffers over TCP: 10 million events/sec
+      - 10-100 event batches/message, in-memory processing
   - Can this service tolerate a single node's guarantees?
   - Could we just stand up another one if it breaks?
   - Could manual intervention take the place of the distributed algorithm?
@@ -831,7 +942,9 @@ and datacenter-pinned solutions.
 
 ### Accept failure
 
-- OK fine; we're gonna go down
+- Distributed systems aren't just characterized by *latency*, but by
+  *recurrent, partial failure*
+- Can we accept this failure and move on with our lives?
   - What's our SLA anyway?
   - Can we recover by hand?
   - Can we pay someone to fix it?
@@ -911,6 +1024,34 @@ and datacenter-pinned solutions.
   - Good candidate for ZK, Etcd, and so on
   - See Boundary's Ordasity
 
+### Independent domains
+
+- Sharding is a specific case of a more general pattern: avoiding coordination
+  - Keep as much independent as possible
+    - Improves fault tolerance
+    - Improves performance
+    - Reduces complexity
+  - Sharding for scalability
+  - Avoiding coordination via CRDTs
+  - Flake IDs: generate globally unique identifiers locally
+  - Partial availability: users can still use some parts of the system
+  - Processing a queue: more consumers reduces the impact of expensive events
+
+### ID structure
+
+- Things in our world have to have unique identifiers
+  - At scale, ID structure can make or break you
+  - Consider your access patterns
+    - Scans
+    - Sorts
+    - Shards
+  - Sequential IDs require coordination: can you avoid them?
+    - Flake IDs: *mostly* time-ordered identifiers, zero-coordination
+      - See http://yellerapp.com/posts/2015-02-09-flake-ids.html
+  - For *shardability*, can your ID map directly to a shard?
+  - SaaS app: object ID can also encode customer ID
+  - Twitter: tweet ID can encode user ID
+
 ### Immutable values
 
 - Data that never changes is trivial to store
@@ -947,6 +1088,46 @@ and datacenter-pinned solutions.
     - Can be even cheaper if you only need serializability
   - See Rich Hickey's talks on Datomic architecture
   - See Pat Helland's 2013 RICON West keynote on Salesforce's storage
+
+### Confluence
+
+- Systems which are order-independent are easier to construct and reason about
+- Also helps us avoid coordination
+- CRDTs are confluent, which means we can apply updates without waiting
+- Immutable values are trivially confluent: once present, fixed
+- Streaming systems can leverage confluence as well:
+  - Buffer events, and compute+flush when you know you've seen everything
+  - Emit partial results so you can take action now, e.g. for monitoring
+  - When full data is available, merge with + or max
+  - Bank ledgers are (mostly) confluent: txn order doesn't affect balance
+    - But when you need to enforce a minimum balance, no longer confluent
+    - Combine with a sealing event (e.g. the day's end) to recover confluence
+- See Aiken, Widom, & Hellerstein 1992, "Behavior of Database Production Rules"
+
+### Backpressure
+
+- Services which talk to each other are usually connected by *queues*
+- Service and queue capacity is finite
+- How do you handle it when a downstream service is unable to handle load?
+  1. Consume resources and explode
+  2. Shed load. Start dropping requests.
+  3. Reject requests. Ignore the work and tell clients it failed.
+  4. Apply backpressure to clients, asking them to slow down.
+- 2-4 allow the system to catch up and recover
+  - But backpressure reduces the volume of work that has to be retried
+- Backpressure defers choice to producers: compositional
+  - Clients of load-shedding systems are locked into load-shedding
+    - They have no way to tell that the system is hosed
+  - Clients of backpressure systems can apply backpressure to *their clients*
+    - Or shed load, if they choose
+  - If you're making an asynchronous system, *always* include backpressure
+    - Your users will thank you later
+- Fundamentally: *bounding resources*
+  - Request timeouts (bounded time)
+  - Exponential backoffs (bounded use)
+  - Bounded queues
+  - Bounded concurrency
+- See Zach Tellman, "Everything Will Flow"
 
 ### Services for domain models
 
@@ -993,18 +1174,29 @@ and datacenter-pinned solutions.
   - Gradually accruing body of assumptions about service relation to the world
   - Punctuated by rewrites to respond to changing external pressures
   - Tushman & Romanelli, 1985: Organizational Evolution
-- Inter-team communication goes hand in hand with inter-service communication
-  - Conway's law
-  - Invest time in good team relationships for neighbor services
-  - Or conversely, choose teams that work well together to implement
-    dependencies
-  - Consider team size and codebase complexity when sizing services
 - Services can be libraries
   - Initially, *all* your services should be libraries
   - Perfectly OK to depend on a user library in multiple services
   - Libraries with well-defined boundaries are easy to extract into
     services later
-- Services probably need a client library
+- Social structure governs the library/service boundary
+  - With few users of a library, or tightly-coordinated users, changes are easy
+  - But across many teams, users have varying priorities and must be convinced
+  - Why should users do work to upgrade to a new library version?
+  - Services *force* coordination through a defined API deprecation lifecycle
+    - You can also enforce this with libraries through code review & tooling
+- Services enable centralized control
+  - Your performance improvements affect everyone instantly
+  - Gradually shift to a new on-disk format or backing database
+  - Instrument use of the service in one place
+  - Harder to do these things with libraries
+- Services have costs
+  - The failure-complexity and latency overhead of a network call
+  - Tangled food web of service dependencies
+  - Hard to statically analyze codepaths
+  - You thought library API versioning was hard
+  - Additional instrumentation/deployment
+- Services can use good client libraries
   - That library might be "Open a socket" or an HTTP client
     - Leverage HTTP headers!
       - Accept headers for versioning
@@ -1027,6 +1219,8 @@ mutable identies, allowing us to build strongly consistent systems at large
 scale. As software grows, different components must scale independently,
 and we break out libraries into distinct services. Service structure goes
 hand-in-hand with teams.
+
+
 
 ## Production Concerns
 
@@ -1058,6 +1252,10 @@ hand-in-hand with teams.
   - Be able to simulate an entire cluster in-process
   - Control concurrent interleavings with simulated networks
   - Automated hardware faults
+- Testing distributed systems is much, much harder than testing local ones
+  - Huge swath of failure modes you've never even heard of
+  - Combinatorial state spaces
+  - Bugs can manifest only for small/large/intermediate time/space/concurrency
 
 ### "It's Slow"
 
@@ -1107,6 +1305,8 @@ hand-in-hand with teams.
     - Key metrics for most systems
       - Apdex: successful response WITHIN latency SLA
       - Latency profiles: 0, 0.5, 0.95, 0.99, 1
+        - Percentiles, not means
+        - BTW you can't take the mean of percentiles either
       - Overall throughput
       - Queue statistics
       - Subjective experience of other systems latency/throughput
@@ -1122,6 +1322,16 @@ hand-in-hand with teams.
       Relic work well
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
     - Significant time investment
+
+### Logging
+
+- Logging is less useful at scale
+  - Problems may not be localized to one node
+    - As requests touch more services, must trace through many logfiles
+    - Invest in log collection infrastructure
+      - ELK, Splunk, etc
+  - Unstructured information is harder to aggregate
+    - Log structured events
 
 ### Shadow traffic
 
@@ -1159,10 +1369,14 @@ hand-in-hand with teams.
 
 ### Feature flags
 
-- A lot of your software's features can degrade piecewise
-- When a feature is problematic, disable it
+- We want incremental rollouts of a changeset after a deploy
+  - Introduce features one by one to watch their impact on metrics
+  - Gradually shift load from one database to another
+  - Disable features when rollout goes wrong
+- We want to obtain partial availability when some services are degraded
+  - Disable expensive features to speed recovery during a failure
 - Use a highly available coordination service to decide which codepaths to
-  enable
+  enable, or how often to take them
   - This service should have minimal dependencies
     - Don't use the primary DB
 - When things go wrong, you can *tune* the system's behavior
@@ -1175,6 +1389,7 @@ hand-in-hand with teams.
   - But how big? Nobody knows
   - Instrument your queues in prod to find out
 - Queues exist to smooth out fluctuations in load
+  - Improves throughput at expense of latency
   - If your load is higher than capacity, no queue will save you
     - Shed load or apply backpressure when queues become full
     - Instrument this
@@ -1186,6 +1401,7 @@ hand-in-hand with teams.
     - Raising the queue size can be tempting, but is a vicious cycle
   - All of this is HARD. I don't have good answers for you
     - Ask Jeff Hodges why it's hard: see his RICON West 2014 talk
+    - See Zach Tellman - Everything Will Flow
 
 
 ## Review
@@ -1197,3 +1413,7 @@ production behavior requires comprehensive instrumentation and alerting. Mature
 distributed systems teams often invest in tooling: traffic shadowing,
 versioning, incremental deploys, and feature flags. Finally, queues require
 special care.
+
+## Further reading
+
+- http://www.rgoarchitects.com/Files/fallacies.pdf
