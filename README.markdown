@@ -52,17 +52,20 @@ Lamport, 1987:
   - Operations inside a node are "fast"
   - Operations between nodes are "slow"
   - What's fast or slow depends on what the system does
-- Nodes are coherent
+- Nodes are reliable
+  - Fail as a unit
   - You know when problems occur
-  - Things effectively happen in order
+  - State is coherent
+  - State transitions occur in a nice, orderly fashion
   - Typically modeled as some kind of single-threaded state machine
 - A node could *itself* be a distributed system
   - But so long as that system as a whole provides "fast, coherent"
     operations, we can treat it as a single node.
 - Formal models for processes
+  - Communicating Sequential Processes
   - Pi calculus
   - Ambient calculus
-  - Communicating Sequential Processes
+  - Actor model
 - Formal models for node failure
   - Crash-stop
   - Crash-recover
@@ -79,34 +82,45 @@ Lamport, 1987:
 - Messages take *time* to propagate
   - This is the "slow" part of the distributed system
   - We call this "latency"
+- Messages can often be lost
+  - This is another "unreliable" part of the distributed system
+- Network is rarely homogenous
+  - Some links slower/smaller/more-likely-to-fail than others
 
 ### Causality diagrams
 
 - We can represent the interaction of nodes and the network as a diagram
-  - Time flows up
-  - Nodes are vertical lines separated by space
+  - Time flows left-to-right, or top-to-bottom
+  - Nodes are lines in the direction of time (because they stay in place)
   - Messages as slanted paths *connecting* nodes
 
 ### Synchronous networks
 
-- Execute in lockstep
-- Fixed bounds on transmission delay
-- Accurate global clock
+- Nodes execute in lockstep: time between node steps is always 1.
+- Message delay is bounded
+- Effectively a perfect global clock
 - Easy to prove stuff about
   - You probably don't have one
 
+### Semi-synchronous networks
+
+- Like synchronous, but the clock is only approximate, e.g. in [c, 1]
+
 ### Asynchronous networks
 
-- Execute independently, whenever
+- Execute independently, whenever: step time is anywhere in [0, 1]
 - Unbounded message delays
 - No global clocks
+- Weaker than semi- or synchronous networks
+  - Implies certain algorithms can't be as efficient
+  - Implies certain algorithms are *impossible*
+  - See e.g. Attiya & Mavronicolas, "Efficiency of Semi-Synchronous vs
+    Asynchronous Networks"
 - IP networks are definitely asynchronous
   - But *in practice* the really pathological stuff doesn't happen
   - Most networks recover in seconds to weeks, not "never"
     - Conversely, human timescales are on the orders of seconds to weeks
     - So we can't pretend the problems don't exist
-
-
 
 ## When networks go wrong
 
@@ -196,11 +210,12 @@ Lamport, 1987:
 - Generalizes Lamport clocks to a vector of all process clocks
 - `t_i' = max(t_i, t_msg_i)`
 - For every operation, increment that process' clock in the vector
-- Provides a partial order
+- Provides a partial causal order
+  - A < B iff all A_i <= B_i, and at least one A_i < B_i
   - Specifically, given a pair of events, we can determine causal relationships
-    - Independent
-    - A in causal past of B
-    - B in causal past of A
+    - A in causal past of B implies A < B
+    - B in causal past of A implies B < A
+    - Independent otherwise
 - Pragmatically: the past is shared; the present is independent
   - Only "present", independent states need to be preserved
   - Ancestor states can be discarded
@@ -216,7 +231,8 @@ Lamport, 1987:
 
 - Much better than NTP
   - Globally distributed total orders on the scale of milliseconds
-  - Can do one possibly conflicting thing per uncertainty window
+  - Promote an asynchronous network to a semi-synchronous one
+  - Unlocks more efficient algorithms
 - Only people with this right now are Google
   - Spanner: globally distributed strongly consistent transactions
   - And they're not sharing
