@@ -622,7 +622,7 @@ consistency.
 ### Paxos
 
 - Paxos is the Gold Standard of consensus algorithms
-  - Lamport 1970 - The Part Time Parliament
+  - Lamport 1989 - The Part Time Parliament
     - Written as a description of an imaginary Greek democracy
   - Lamport 2001 - Paxos Made Simple
     - "The Paxos algorithm for implementing a fault-tolerant distributed system
