@@ -19,8 +19,8 @@ Lamport, 1987:
 
 - First glance: \*nix boxen in our colo, running processes communicating via
   TCP or UDP.
-  - Or boxes in EC2, rackspace, etc
-  - Maybe communicating over infiniband
+  - Or boxes in EC2, Rackspace, etc
+  - Maybe communicating over InfiniBand
   - Separated by inches and a LAN
   - Or by kilometers and the internet
 - Most mobile apps are also taking part in a distributed system
@@ -63,7 +63,7 @@ Lamport, 1987:
     operations, we can treat it as a single node.
 - Formal models for processes
   - Communicating Sequential Processes
-  - Pi calculus
+  - Pi-calculus
   - Ambient calculus
   - Actor model
 - Formal models for node failure
@@ -129,7 +129,7 @@ Lamport, 1987:
   - Delay
   - Drop
   - Reorder
-- Drops and delays are indistinguishible
+- Drops and delays are indistinguishable
 - Byzantine networks are allowed to mess with messages *arbitrarily*
   - Including rewriting their content
   - They mostly don't happen in real networks
@@ -489,12 +489,12 @@ consistency.
   - If you can prove a system is logically monotonic, it is coordination free
   - What the heck is "coordination"
   - For that matter, what's "monotonic"?
-- Montonicity, informally, is retraction-free
+- Monotonicity, informally, is retraction-free
   - Deductions from partial information are never invalidated by new information
   - Both relational algebra and Datalog without negation are monotone
 - Ameloot, et al, 2011: Relational transducers for declarative networking
   - Theorem which shows coordination-free networks of processes unaware of the
-    network extent can only compute only monotone queries in Datalog
+    network extent can compute only monotone queries in Datalog
     - This is not an easy read
   - "Coordination-free" doesn't mean no communication
     - Algo succeeds even in face of arbitrary horizontal partitions
@@ -877,7 +877,7 @@ and datacenter-pinned solutions.
 - Journals work to disk on multiple nodes for redundancy
 - Useful when you need to acknowledge work now, and actually do it later
 - Send data reliably between stateless services
-- The *only* one I know that won't lose data in a partition is Kakfa
+- The *only* one I know that won't lose data in a partition is Kafka
   - Maybe SQS?
 - Queues do not improve end-to-end latency
   - Always faster to do the work immediately
@@ -959,7 +959,7 @@ than the *transformations*.
   - Dry-run deployments against staging environments
 - Possible to build very reliable networks and machines
   - At the cost of moving slower, buying more expensive HW, finding talent
-  - HW/nework failure still *happens*, but sufficiently rare => low priority
+  - HW/network failure still *happens*, but sufficiently rare => low priority
 
 ### Accept failure
 
@@ -1009,7 +1009,7 @@ than the *transformations*.
   - Common DR strategy: Paxos across 5 nodes; 3 or 4 in primary DC
     - Ops can complete as soon as the local nodes ack; low latencies
     - Resilient to single-node failure (though latencies will spike)
-    - But you still have a seqentially consistent backup in the other DC
+    - But you still have a sequentially consistent backup in the other DC
       - So in the event you lose an entire DC, all's not lost
     - See Camille Fournier's talks on ZK deployment
 - Redundancy improves availability so long as failures are uncorrelated
@@ -1157,7 +1157,7 @@ than the *transformations*.
   - Monolithic applications are essentially *multitenant* systems
     - Multitenancy is tough
     - But its often okay to run multiple logical "services" in the same process
-- Divide your system into logical services for discete parts of the domain
+- Divide your system into logical services for discrete parts of the domain
   model
   - OO approach: each *noun* is a service
     - User service
@@ -1236,7 +1236,7 @@ that some failures are unavoidable: SLAs and apologies can be cost-effective.
 To handle catastrophic failure, we use backups. To improve reliability, we
 introduce redundancy. To scale to large problems, we divide the problem into
 shards. Immutable values are easy to store and cache, and can be referenced by
-mutable identies, allowing us to build strongly consistent systems at large
+mutable identities, allowing us to build strongly consistent systems at large
 scale. As software grows, different components must scale independently,
 and we break out libraries into distinct services. Service structure goes
 hand-in-hand with teams.
