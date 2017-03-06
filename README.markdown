@@ -187,6 +187,11 @@ Lamport, 1987:
   - Caveat: Hardware can drift
   - Caveat: By *centuries*
   - Caveat: POSIX time is not monotonic by *definition*
+    - Cloudflare 2017: Leap second at midnight UTC meant time flowed backwards
+    - At the time, Go didn't offer access to CLOCK_MONOTONIC
+    - Computed a negative duration, then fed it to rand.int63n(), which paniced
+    - Caused DNS resolutions to fail: 1% of HTTP requests affected for several hours
+    - https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/
   - Caveat: The timescales you want to measure may not be attainable
   - Caveat: Threads can sleep
   - Caveat: Runtimes can sleep
