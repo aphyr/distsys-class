@@ -186,6 +186,8 @@ Lamport, 1987:
   - Caveat: Definitely not well-synced between nodes
   - Caveat: Hardware can drift
   - Caveat: By *centuries*
+    - NTP might not care
+    - http://rachelbythebay.com/w/2017/09/27/2153/
   - Caveat: POSIX time is not monotonic by *definition*
     - Cloudflare 2017: Leap second at midnight UTC meant time flowed backwards
     - At the time, Go didn't offer access to CLOCK_MONOTONIC
@@ -671,6 +673,12 @@ consistency.
   - But there's also a SYNC command that guarantees real-time visibility
   - (SYNC + op) allows linearizable reads as well
 - Again, majority quorum, 5 or 7 nodes
+
+### Humming Consensus
+
+- Metadata store for managing distributed system reconfiguration
+- Looks a little like CORFU's replicated log
+- See also: chain replication
 
 ### Viewstamped Replication
 
