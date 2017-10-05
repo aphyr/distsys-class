@@ -1445,4 +1445,13 @@ special care.
 
 ## Further reading
 
-- http://www.rgoarchitects.com/Files/fallacies.pdf
+### Online
+
+- Mixu has a delightful book on distributed systems with incredible detail. http://book.mixu.net/distsys/
+- Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/
+- The Fallacies of Distributed Computing is a classic text on mistaken assumptions we make designing distributed systems. http://www.rgoarchitects.com/Files/fallacies.pdf
+- Christopher Meiklejohn has a list of key papers in distributed systems. http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html
+
+### Trees
+
+- Nancy Lynch's "Distributed Algorithms" is a comprehensive overview of the field from a more theoretical perspective
