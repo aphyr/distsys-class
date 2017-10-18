@@ -407,6 +407,27 @@ discuss some high-level *properties* of distributed systems.
       *we* wrote
       - First-committer-wins
 
+### Does any of this actually matter?
+
+- Real world just isn't that concurrent
+- Plenty of companies get by on Read Committed
+- But *malicious* attackers can *induce* concurrency
+  - Flexcoin
+    - Bitcoin exchange which allowed users to create money by shuffling between accounts
+    - Attacked in 2014, 365,000 GBP stolen
+    - Exchange collapsed altogether
+  - Poloniex
+    - Concurrent withdrawals were improperly isolated, allowing users to overspend
+    - Safety audits didn't notice negative balances
+    - 12.3% of exchange funds stolen; loss spread among users
+  - [Warszawski & Bailis 2017: Acidrain](http://www.bailis.org/papers/acidrain-sigmod2017.pdf)
+    - Automated identification of consistency violation in web apps
+    - e.g. Buy one gift card, then spend it an unlimited number of times
+    - e.g. Buy a pen, add a laptop to cart during checkout, get a free laptop
+    - Vulnerabilities found in over 50% of all eCommerce web sites
+      - Weak DB isolation defaults
+      - Improper use of transactional scope
+      - Failing to use any transactions whatsoever
 
 ## Tradeoffs
 
@@ -651,16 +672,17 @@ consistency.
   - It's not always clear which of these optimizations to use, and which
     can be safely combined
   - Each implementation uses a slightly different flavor
+  - Paxos is really more of a *family* of algorithms than a well-described
+    single entity
 - Used in a variety of production systems
   - Chubby
   - Cassandra
   - Riak
   - FoundationDB
   - WANdisco SVN servers
-- We're not even sure Chubby *is* Paxos, as described in the papers
-  - Paxos is really more of a *family* of algorithms than a well-described
-    single entity
-  - Though we're pretty darn confident in the various proofs at this point
+- New research: Paxos quorums need not be majority: can optimize for fast phase-2 quorums [Howard, Malkhi, and Spiegelman](https://arxiv.org/abs/1608.06696).
+  - We're not sure how to USE this yet
+  - Durability still requires distribution
 
 ### ZAB
 
@@ -750,6 +772,7 @@ can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
     independent chunks
     - Try to align memory barriers to work unit boundaries
     - Allows the processor to cheat as much as possible within a work unit
+  - See Danica Porobic, 2016: [High Performance Transaction Processing on Non-Uniform Hardware Topologies](https://infoscience.epfl.ch/record/219117/files/EPFL_TH7023.pdf)
 
 ### Local networks
 
@@ -1187,6 +1210,17 @@ than the *transformations*.
     - Colocate services which use complementary resources (e.g. disk and CPU)
       - By hand: Run memcache on rendering nodes
       - Newer shops: Google Borg, Mesos, Kubernetes
+  - Services should encapsulate and abstract
+    - Try to build trees instead of webs
+    - Avoid having outsiders manipulate a service's data store directly
+  - Coordination between services requires special protocols
+    - Have to re-invent transactions
+    - Go commutative where possible
+    - Sagas
+      - Was written for a single-node world: we have to be clever in distributed contexts
+      - Transactions must be idempotent, OR commute with rollbacks
+    - [Typhon/Cerberus](http://www.cs.ucsb.edu/~vaibhavarora/Typhon-Ieee-Cloud-2017.pdf)
+      - Protocol for causal consistency over multiple data stores
 
 ### Structure Follows Social Spaces
 
@@ -1304,6 +1338,12 @@ hand-in-hand with teams.
     - Queue latency
   - Try to localize problem using application-level metrics
     - Then dig in to process and OS performance
+  - Latency variance between nodes doing the same work is an important signal
+    - 1/3 nodes slow: likely node HW, re-route
+    - 3/3 nodes slow: likely a logical fault: look at shard size, workload, queries
+  - Tail latencies are magnified by fanout workloads
+    - [Jeff Dean, 2013: The Tail at Scale](https://research.google.com/pubs/pub40801.html)
+    - Consider speculative parallelism
 
 ### Instrument everything
 
@@ -1351,6 +1391,10 @@ hand-in-hand with teams.
       Relic work well
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
     - Significant time investment
+    - [Mystery Machine](https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-chow.pdf)
+      - Automatic inference of causal relationships between services from trace data
+      - Identification of critical paths
+      - Performance modeling new algorithms before implementation
 
 ### Logging
 
@@ -1410,6 +1454,22 @@ hand-in-hand with teams.
     - Don't use the primary DB
 - When things go wrong, you can *tune* the system's behavior
   - When coordination service is down, fail *safe*!
+
+### Chaos engineering
+
+- Breaking things in production
+  - Forces engineers to handle failure appropriately *now*, not in response to
+    an incident later
+  - Identifies unexpected dependencies in the critical path
+    - "When the new stats service goes down, it takes the API with it. Are you
+      *sure* that's necessary?"
+  - Requires good instrumentation and alerting, so you can measure impact of
+    events
+  - Limited blast radius
+    - Don't nuke an entire datacenter every five minutes
+      - But *do* try it once a quarter
+    - Don't break *too* many nodes in a replication group
+    - Break only a small fraction of requests/users at a time
 
 ### Oh no, queues
 
