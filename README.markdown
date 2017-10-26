@@ -1362,6 +1362,7 @@ hand-in-hand with teams.
   - Awesome: kill a process with SIGUSR1, it dumps five minutes of request load
   - Awesome: tcpdump/tcpreplay harnesses for requests
   - Awesome: shadowing live prod traffic to your staging/QA nodes
+- See Envoy from Lyft
 
 ### Versioning
 
