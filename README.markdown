@@ -33,6 +33,7 @@ Lamport, 1987:
   - And often unreliably
   - Whatever those mean for you
 - So also:
+  - CPUs in SMP, multi-core, or NUMA systems for [Cache-coherency](https://en.wikipedia.org/wiki/Cache_memory#Cache_coherency)
   - Redundant CPUs in an airplane
   - ATMs and Point-of-Sale terminals
   - Space probes
