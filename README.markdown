@@ -134,6 +134,8 @@ Lamport, 1987:
   - Including rewriting their content
   - They mostly don't happen in real networks
     - Mostly
+    - https://www.pagerduty.com/blog/the-discovery-of-apache-zookeepers-poison-packet/
+    - https://tech.vijayp.ca/linux-kernel-bug-delivers-corrupt-tcp-ip-data-to-mesos-kubernetes-docker-containers-4986f88f7a19
 
 ## Low level protocols
 
@@ -199,6 +201,9 @@ Lamport, 1987:
   - Caveat: Runtimes can sleep
   - Caveat: OS's can sleep
   - Caveat: "Hardware" can sleep
+  - Caveat: The hypervisor can lie to you
+    - By 16+ seconds in a 15 minute period!?
+    - https://gist.github.com/sandfox/32e749b5eac861c93f1bbeb8782ae8fd
 - Just don't.
 
 ### Lamport Clocks
@@ -1440,6 +1445,13 @@ hand-in-hand with teams.
   - Consider shadowing traffic in prod and comparing old/new versions
     - Good way to determine if new code is faster & correct
 
+### Automated Control
+
+- Automated failure handling is good
+- But not too much
+  - "Ironies of Automation", Bainbridge 1983
+    - https://pdfs.semanticscholar.org/0713/bb9d9b138e4e0a15406006de9b0cddf68e28.pdf
+
 ### Feature flags
 
 - We want incremental rollouts of a changeset after a deploy
@@ -1454,6 +1466,8 @@ hand-in-hand with teams.
     - Don't use the primary DB
 - When things go wrong, you can *tune* the system's behavior
   - When coordination service is down, fail *safe*!
+
+
 
 ### Chaos engineering
 
