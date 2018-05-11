@@ -1,6 +1,6 @@
 # An introduction to distributed systems
 
-Copyright 2014, 2016 Kyle Kingsbury
+Copyright 2014, 2016, 2017 Kyle Kingsbury; Jepsen, LLC.
 
 This outline accompanies a 12-16 hour [overview class on distributed systems
 fundamentals](http://jepsen.io/training.html). The course aims to introduce
@@ -190,6 +190,8 @@ Lamport, 1987:
   - Caveat: By *centuries*
     - NTP might not care
     - http://rachelbythebay.com/w/2017/09/27/2153/
+  - Caveat: NTP can still jump the clock backwards (default: delta > 128 ms)
+    - https://www.eecis.udel.edu/~mills/ntp/html/clock.html
   - Caveat: POSIX time is not monotonic by *definition*
     - Cloudflare 2017: Leap second at midnight UTC meant time flowed backwards
     - At the time, Go didn't offer access to CLOCK_MONOTONIC
@@ -1419,6 +1421,7 @@ hand-in-hand with teams.
   - Awesome: kill a process with SIGUSR1, it dumps five minutes of request load
   - Awesome: tcpdump/tcpreplay harnesses for requests
   - Awesome: shadowing live prod traffic to your staging/QA nodes
+- See Envoy from Lyft
 
 ### Versioning
 
