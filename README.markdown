@@ -1397,7 +1397,7 @@ hand-in-hand with teams.
     - Where your app does something common (e.g. rails apps) tools like New
       Relic work well
   - Shard metrics by client
-    - Helpfu when users have varying workloads
+    - Helpful when users have varying workloads
     - Can tune thresholds to be appropriate for that client
     - A few for major clients, another bucket for "the rest"
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
