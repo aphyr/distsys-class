@@ -244,7 +244,7 @@ Lamport, 1987:
   - Unlocks more efficient algorithms
 - Only people with this right now are Google
   - Spanner: globally distributed strongly consistent transactions
-  - And they're not sharing
+  - [They're sharing](https://cloud.google.com/spanner/) but it's not cheap
 - More expensive than you'd like
   - Several hundred per GPS receiver
   - Atomic clocks for local corroboration: $$$$?
