@@ -9,7 +9,7 @@ lecture and discussion.  Participants will gain an intuitive understanding of
 key distributed systems terms, an overview of the algorithmic landscape, and
 explore production concerns.
 
-## What makes a thing distributed?
+## What makes a thing distributed
 
 Lamport, 1987:
 
@@ -162,7 +162,7 @@ Lamport, 1987:
   - This causes all kinds of havoc in, say, metrics collection
   - And debugging it is *hard*
   - TCP gives you flow control and repacks logical messages into packets
-    - You'll need to re-build flow-control and backpressure
+    - You'll need to re-build flow-control and back-pressure
   - TLS over UDP is a thing, but tough
 - UDP is really useful where TCP FSM overhead is prohibitive
   - Memory pressure
@@ -187,15 +187,15 @@ Lamport, 1987:
   - Caveat: Hardware can drift
   - Caveat: By *centuries*
     - NTP might not care
-    - http://rachelbythebay.com/w/2017/09/27/2153/
+    - <http://rachelbythebay.com/w/2017/09/27/2153/>
   - Caveat: NTP can still jump the clock backwards (default: delta > 128 ms)
-    - https://www.eecis.udel.edu/~mills/ntp/html/clock.html
+    - <https://www.eecis.udel.edu/~mills/ntp/html/clock.html>
   - Caveat: POSIX time is not monotonic by *definition*
     - Cloudflare 2017: Leap second at midnight UTC meant time flowed backwards
     - At the time, Go didn't offer access to CLOCK_MONOTONIC
     - Computed a negative duration, then fed it to rand.int63n(), which paniced
     - Caused DNS resolutions to fail: 1% of HTTP requests affected for several hours
-    - https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/
+    - <https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/>
   - Caveat: The timescales you want to measure may not be attainable
   - Caveat: Threads can sleep
   - Caveat: Runtimes can sleep
@@ -252,7 +252,6 @@ Lamport, 1987:
   - I don't know who's doing it yet, but I'd bet datacenters in the
     future will offer dedicated HW interfaces for bounded-accuracy time.
 
-
 ## Review
 
 We've covered the fundamental primitives of distributed systems. Nodes
@@ -260,9 +259,6 @@ exchange messages through a network, and both nodes and networks can fail in
 various ways. Protocols like TCP and UDP give us primitive channels for
 processes to communicate, and we can order events using clocks. Now, we'll
 discuss some high-level *properties* of distributed systems.
-
-
-
 
 ## Availability
 
@@ -308,7 +304,6 @@ discuss some high-level *properties* of distributed systems.
   - And on finer timescales!
     - "Apdex for the user service just dropped to 0.5; page ops!"
 - Ideally: integral of happiness delivered by your service?
-
 
 ## Consistency
 
@@ -465,7 +460,6 @@ discuss some high-level *properties* of distributed systems.
     - Monotonic Reads
     - Monotonic Writes
 
-
 ### Harvest and Yield
 
 - Fox & Brewer, 1999: Harvest, Yield, and Scalable Tolerant Systems
@@ -482,8 +476,8 @@ discuss some high-level *properties* of distributed systems.
     - e.g. "99% of the time, you can read 90% of your prior writes"
   - Strongly dependent on workload, HW, topology, etc
   - Can tune harvest vs yield on a per-request basis
-   - "As much as possible in 10ms, please"
-   - "I need everything, and I understand you might not be able to answer"
+    - "As much as possible in 10ms, please"
+    - "I need everything, and I understand you might not be able to answer"
 
 ### Hybrid systems
 
@@ -504,7 +498,6 @@ are the rules that govern what operations can happen and when. Stronger
 consistency models generally come at the cost of performance and availability.
 Next, we'll talk about different ways to build systems, from weak to strong
 consistency.
-
 
 ## Avoid Consensus Wherever Possible
 
@@ -602,7 +595,6 @@ consistency.
   - Probably best in concert with stronger transactional systems
   - See also: COPS, Swift, Eiger, Calvin, etc
 
-
 ## Fine, We Need Consensus, What Now?
 
 - The consensus problem:
@@ -646,7 +638,6 @@ consistency.
   - In stable clusters, you can get away with only a single round-trip to a
     majority of nodes.
   - More during cluster transitions.
-
 
 ### Paxos
 
@@ -738,8 +729,6 @@ CRDTs to merge updates from our peers, and HATs for weakly isolated
 transactions. Serializability and linearizability require *consensus*, which we
 can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
 *scales* of distributed systems.
-
-
 
 ## Characteristic latencies
 
@@ -847,7 +836,6 @@ latencies are short enough for many network hops before users take notice. In
 geographically replicated systems, high latencies drive eventually consistent
 and datacenter-pinned solutions.
 
-
 ## Common distributed systems
 
 ### Outsourced heaps
@@ -948,7 +936,6 @@ building applications. Streaming systems are applied for continuous,
 low-latency processing of datasets, and tend to look more like frameworks than
 databases. Their dual, distributed queues, focus on the *messages* rather
 than the *transformations*.
-
 
 ## A Pattern Language
 
@@ -1091,7 +1078,7 @@ than the *transformations*.
   - Sharding for scalability
   - Avoiding coordination via CRDTs
   - Flake IDs: *mostly* time-ordered identifiers, zero-coordination
-    - See http://yellerapp.com/posts/2015-02-09-flake-ids.html
+    - See <http://yellerapp.com/posts/2015-02-09-flake-ids.html>
   - Partial availability: users can still use some parts of the system
   - Processing a queue: more consumers reduces the impact of expensive events
 
@@ -1287,8 +1274,6 @@ mutable identities, allowing us to build strongly consistent systems at large
 scale. As software grows, different components must scale independently,
 and we break out libraries into distinct services. Service structure goes
 hand-in-hand with teams.
-
-
 
 ## Production Concerns
 
@@ -1502,7 +1487,6 @@ hand-in-hand with teams.
     - Ask Jeff Hodges why it's hard: see his RICON West 2013 talk
     - See Zach Tellman - Everything Will Flow
 
-
 ## Review
 
 Running distributed systems requires cooperation between developers, QA, and
@@ -1517,10 +1501,15 @@ special care.
 
 ### Online
 
-- Mixu has a delightful book on distributed systems with incredible detail. http://book.mixu.net/distsys/
-- Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/
-- The Fallacies of Distributed Computing is a classic text on mistaken assumptions we make designing distributed systems. http://www.rgoarchitects.com/Files/fallacies.pdf
-- Christopher Meiklejohn has a list of key papers in distributed systems. http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html
+- Mixu has a delightful book on distributed systems with incredible detail.
+  <http://book.mixu.net/distsys/>
+- Jeff Hodges has some excellent, production-focused advice.
+  <https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/>
+- The Fallacies of Distributed Computing is a classic text
+  on mistaken assumptions we make designing distributed systems.
+  <http://www.rgoarchitects.com/Files/fallacies.pdf>
+- Christopher Meiklejohn has a list of key papers in distributed systems.
+  <http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html>
 
 ### Trees
 
