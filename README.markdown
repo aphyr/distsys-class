@@ -13,9 +13,9 @@ explore production concerns.
 
 Lamport, 1987:
 
->  A distributed system is one in which the failure of a computer
->  you didn't even know existed can render your own computer
->  unusable.
+> A distributed system is one in which the failure of a computer
+> you didn't even know existed can render your own computer
+> unusable.
 
 - First glance: \*nix boxen in our colo, running processes communicating via
   TCP or UDP.
@@ -534,7 +534,6 @@ consistency.
   - Unordered programming with flow analysis
   - Can tell you where coordination *would* be required
 
-
 ### Gossip
 
 - Message broadcast system
@@ -791,12 +790,11 @@ can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
 - Network is within an order of mag compared to uncached disk seeks
   - Or faster, in EC2
     - EC2 disk latencies can routinely hit 20ms
-      - 200ms?
-        - *20,000* ms???
-          - Because EBS is actually other computers
-          - LMAO if you think anything in EC2 is real
-            - Wait, *real disks do this too*?
-              - What even are IO schedulers?
+      - 200ms? *20,000* ms???
+      - Because EBS is actually other computers
+      - LMAO if you think anything in EC2 is real
+      - Wait, *real disks do this too*?
+      - What even are IO schedulers?
 - But network is waaaay slower than memory/computation
   - If your aim is *throughput*, work units should probably take longer than a
     millisecond
@@ -1362,8 +1360,8 @@ hand-in-hand with teams.
     - In relation to its dependencies
     - Which can, in turn, drive new tests
   - In a way, good monitoring is like continuous testing
-   - But not a replacement: these are distinct domains
-   - Both provide assurance that your changes are OK
+    - But not a replacement: these are distinct domains
+    - Both provide assurance that your changes are OK
   - Want high-frequency monitoring
     - Production behaviors can take place on 1ms scales
       - TCP incast
@@ -1381,13 +1379,13 @@ hand-in-hand with teams.
     - Key metrics for most systems
       - Apdex: successful response WITHIN latency SLA
       - Latency profiles: 0, 0.5, 0.95, 0.99, 1
-        - Percentiles, not means
-        - BTW you can't take the mean of percentiles either
+      - ^ Percentiles, not means
+      - ^ BTW you can't take the mean of percentiles either
       - Overall throughput
       - Queue statistics
       - Subjective experience of other systems latency/throughput
-        - The DB might think it's healthy, but clients could see it as slow
-        - Combinatorial explosion--best to use this when drilling into a failure
+      - ^ The DB might think it's healthy, but clients could see it as slow
+      - ^ Combinatorial explosion--best to use this when drilling into a failure
     - You probably have to write this instrumentation yourself
       - Invest in a metrics library
   - Out-of-the-box monitoring usually doesn't measure what really matters: your
