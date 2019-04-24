@@ -552,7 +552,7 @@ consistency.
   - Hop up to a connector node which relays to other connector nodes
   - Reduces superfluous messages
   - Reduces latency
-  - Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
+  - Plumtree (Leitao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
 - Push-Sum et al
   - Sum inputs from everyone you've received data from
   - Broadcast that to a random peer
