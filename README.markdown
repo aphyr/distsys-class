@@ -251,14 +251,18 @@ Lamport, 1987:
   - Globally distributed total orders on the scale of milliseconds
   - Promote an asynchronous network to a semi-synchronous one
   - Unlocks more efficient algorithms
-- Only people with this right now are Google
-  - Spanner: globally distributed strongly consistent transactions
-  - And they're not sharing
-- More expensive than you'd like
+- Only people with this right now are:
+  - Google
+    - Spanner: globally distributed strongly consistent transactions
+    - And they're not sharing
+  - Amazon Web Services
+    - [Amazon Time Sync Service](https://aws.amazon.com/blogs/aws/keeping-time-with-amazon-time-sync-service/)
+    - NTP protocol should not be used. `chrony` is far superior at addressing clock skew with Amazon's time service that is kept in sync with atomic clocks.
+- More expensive than you'd like, unless you can rely on a third party provider
   - Several hundred per GPS receiver
   - Atomic clocks for local corroboration: $$$$?
   - Need multiple types of GPS: vendors can get it wrong
-  - I don't know who's doing it yet, but I'd bet datacenters in the
+  - I don't know who's doing it yet apart from AWS, but I'd bet datacenters in the
     future will offer dedicated HW interfaces for bounded-accuracy time.
 
 
