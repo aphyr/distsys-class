@@ -547,9 +547,8 @@ consistency.
 ### Gossip
 
 - Message broadcast system
-- Useful for cluster management, service discovery, CDNs, etc
-- Very weak consistency
-- Very high availability
+- Useful for cluster management, service discovery, health, sensors, CDNs, etc
+- Generally weak consistency / high availability
 - Global broadcast
   - Send a message to every other node
   - O(nodes)
@@ -563,6 +562,12 @@ consistency.
   - Reduces superfluous messages
   - Reduces latency
   - Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
+- Push-Sum et al
+  - Sum inputs from everyone you've received data from
+  - Broadcast that to a random peer
+  - Extensions for minima, maxima, means
+  - Helpful for live metrics, rate limiting, routing, identifying cluster
+    hotspots
 
 ### CRDTs
 
@@ -1096,7 +1101,8 @@ than the *transformations*.
     - Reduces complexity
   - Sharding for scalability
   - Avoiding coordination via CRDTs
-  - Flake IDs: generate globally unique identifiers locally
+  - Flake IDs: *mostly* time-ordered identifiers, zero-coordination
+    - See http://yellerapp.com/posts/2015-02-09-flake-ids.html
   - Partial availability: users can still use some parts of the system
   - Processing a queue: more consumers reduces the impact of expensive events
 
@@ -1109,8 +1115,7 @@ than the *transformations*.
     - Sorts
     - Shards
   - Sequential IDs require coordination: can you avoid them?
-    - Flake IDs: *mostly* time-ordered identifiers, zero-coordination
-      - See http://yellerapp.com/posts/2015-02-09-flake-ids.html
+    - Flake IDs, UUIDs, ...
   - For *shardability*, can your ID map directly to a shard?
   - SaaS app: object ID can also encode customer ID
   - Twitter: tweet ID can encode user ID
@@ -1400,6 +1405,10 @@ hand-in-hand with teams.
     - Host metrics like CPU, disk, etc
     - Where your app does something common (e.g. rails apps) tools like New
       Relic work well
+  - Shard metrics by client
+    - Helpfu when users have varying workloads
+    - Can tune thresholds to be appropriate for that client
+    - A few for major clients, another bucket for "the rest"
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
     - Significant time investment
     - [Mystery Machine](https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-chow.pdf)
