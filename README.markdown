@@ -187,6 +187,8 @@ Lamport, 1987:
   - Caveat: NTP is probably not as good as you think
   - Caveat: Definitely not well-synced between nodes
   - Caveat: Hardware can drift
+    - Multiple reports of supermicro TSCs causing system clock to run 26ms/s fast
+      - https://groups.google.com/forum/#!search/Supermicro$20SYS-1029UX-LL1-S16$20system$20clock$20running$20too$20fast/mechanical-sympathy/oG9vLZVYjVA/DU-T9QpBAgAJ
   - Caveat: By *centuries*
     - NTP might not care
     - http://rachelbythebay.com/w/2017/09/27/2153/
@@ -207,6 +209,8 @@ Lamport, 1987:
     - By 16+ seconds in a 15 minute period!?
     - https://gist.github.com/sandfox/32e749b5eac861c93f1bbeb8782ae8fd
 - Just don't.
+- At least OS monotonic clocks are monotonic, right?
+  - oh no: https://github.com/rust-lang/rust/blob/eed12bcd0cb281979c4c9ed956b9e41fda2bfaeb/src/libstd/time.rs#L201-L232
 
 ### Lamport Clocks
 
