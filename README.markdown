@@ -1028,6 +1028,35 @@ than the *transformations*.
   - Consciously choosing to recover *above* the level of the system
   - This is how financial companies and retailers do it!
 
+### Recovery First
+
+- Assume a failure has just occurred: how will you recover?
+- Make this recovery the *default* path of execution
+- Writing recovery-first code keeps you from punting on error handling
+- Exercising recovery code by default means you know it works
+- Recovery by default means you don't have to worry about different semantics
+  during a real fault
+- If necessary, introduce a happy path for performance optimization
+  - But you lose some of these advantages!
+
+### Reconciliation Loops
+
+- You've got a complex, stateful system, and want to move it somewhere
+- Could devise a plan of changes, and apply those changes in order
+  - But what if some change breaks? How do you recover?
+- Instead, maintain a *target*: a representation of what you *want* the system
+  to become
+- Next, write a function that looks at the current state, and *diffs* it with
+  the target
+- Use that diff to find a step that moves the system closer to the target
+- Repeat indefinitely
+- Robust to faults and interference
+  - What if your admin is tweaking things by hand?
+  - What if two instances of the control system are running concurrently?
+- Deployed to great effect in systems like [Borg & Kubernetes](https://queue.acm.org/detail.cfm?id=2898444)
+- Also applicable to keeping data in sync between systems
+  - Making sure every order is shipped & billed, for instance
+
 ### Backups
 
 - Backups are essentially sequential consistency, BUT you lose a window of ops.
@@ -1234,14 +1263,6 @@ than the *transformations*.
   - Services should encapsulate and abstract
     - Try to build trees instead of webs
     - Avoid having outsiders manipulate a service's data store directly
-  - Coordination between services requires special protocols
-    - Have to re-invent transactions
-    - Go commutative where possible
-    - Sagas
-      - Was written for a single-node world: we have to be clever in distributed contexts
-      - Transactions must be idempotent, OR commute with rollbacks
-    - [Typhon/Cerberus](http://www.cs.ucsb.edu/~vaibhavarora/Typhon-Ieee-Cloud-2017.pdf)
-      - Protocol for causal consistency over multiple data stores
 
 ### Structure Follows Social Spaces
 
@@ -1291,6 +1312,153 @@ than the *transformations*.
     - When the API is known to be stable, every client can *assume* it works
     - Removes the need for network calls in test suites
     - Dramatic reduction in test runtime and dev environment complexity
+
+### Cross-service coordination
+
+- Coordination between services requires special protocols
+  - Have to re-invent transactions
+  - Go commutative where possible
+  - Sagas
+    - Was written for a single-node world: we have to be clever in distributed contexts
+    - Transactions must be idempotent, OR commute with rollbacks
+  - [Typhon/Cerberus](http://www.cs.ucsb.edu/~vaibhavarora/Typhon-Ieee-Cloud-2017.pdf)
+    - Protocols for causal consistency over multiple data stores
+      - e.g. If Lupita blocks Miss Angela, then posts, Miss Angela can't see it
+    - Typhon: A single logical *entity* has *data item* representations in
+              different data stores
+      - Assumes datastores are serializable or offer atomic read/cas on items
+      - Transactions which access same entity AND T1 happens-before T2 get a
+        causal dependency edge T1 -> T2
+    - Cerberus: protocol for transactions involving a single entity x
+      - Writes can only affect one representation of x
+      - Any number of reads across representations of x
+      - Global metadata: a version vector for each entity (GVV)
+      - Each representation metadata:
+        - Update version vector (UVV): versions known as of last update
+        - Read version vector (RVV): versions known as of last read
+      - Conflicts detected when GVV < UVV/RVV
+      - Two phases:
+        - Reads
+          - Check GVV for entity x
+          - Perform reads of x on each (asked-for) representation
+          - At each representation: check RVV <= GVV, update RVV
+        - Writes
+          - Send write to representation
+          - Check UVV <= GVV & RVV <= GVV
+        - Commit
+          - Update representation and RVV/UVV ensuring RVV/UVV unchanged
+          - New UVV constructed by incrementing i'th entry of existing UVV
+  - General-purpose transactions
+    - [Calvin](http://cs.yale.edu/homes/thomson/publications/calvin-sigmod12.pdf)
+      - Serializable (or strict-1SR) transactions
+      - Deterministic txns enqueued into sharded global log
+      - Log ensures txn order
+      - Application at replicas/shards requires no further coordination
+      - Minimum latency floor for log windows
+    - [CockroachDB](https://www.cockroachlabs.com/guides/cockroachdb-the-resilient-geo-distributed-sql-database-sigmod-2020/)
+      - Serializable
+      - Assumes linearizable stores
+      - Assumes semi-sync clocks
+      - Similar to a more tractable Spanner
+
+### Migrations
+
+- Migrations are hard.
+  - There's no silver bullet
+  - But some techniques can make your life easier
+- Hard cut
+  - Write new system and migration to copy old data to it
+  - Have dependent services talk to both--but in practice, only one.
+  - Turn off old system
+  - Copy data
+  - Start up new system
+  - Tradeoffs!
+    - Don't have to worry about in-flight data
+    - Simple migration scripts: just read all data and write to new datastore
+    - Requires downtime proportional to migration script
+  - Can sometimes scope this to a single shard/user/domain at a time
+- Incremental
+  - Write new system B
+  - Deploy alongside original A
+  - Dependent services talk to both
+    - Ideal: find all readers, have every reader talk to both A and B
+    - Then start writing to B
+      - This frees you from having to worry about readers who only know about A
+  - Consistency nightmares; need to trace all data dependencies
+  - Tradeoffs!
+    - Reduced/no downtime
+    - But complex reasoning about data dependencies required
+- Wrapper services
+  - Operationally speaking, it can be tricky to FIND and change all users of A
+  - So... don't. Introduce a wrapper service W which proxies to A
+  - Introduce B, and make changes so that W talks to B as well
+  - When A is phased out, remove W and talk directly to B.
+  - Allows for centralized metrics, errors, comparison of behavior, etc
+- Eventual atomicity
+  - Imagine you write each update to old service A, then new service B
+  - At some point, your write to A will succeed, and B will fail. What then?
+  - Can use read-repair: read A and B, fill in missing updates
+    - But this requires mergeability: only works for things like CRDTs
+  - Can use a reconciliation process
+    - Iterate over whole DB, look for changes, apply to both.
+    - Also requires something like a CRDT
+  - Can use a Saga
+    - All updates go to durable queue
+    - Queue worker retries until updates applied to A and B
+    - Might require ordering updates to avoid state divergence
+      - Potentially *global* serialization
+    - Be aware of the DB's consistency model
+- Isolation
+  - Imagine Jane writes w1 to A, then B
+  - Concurrently, Naomi writes w2 to B, then A
+  - Result: A = w2, B = w1
+  - Eventual atomicity isn't enough to prevent divergence
+  - Can reduce issues by picking a standard order: always A then B (or B then A)
+    - But imagine
+      - Jane writes A = w1
+      - Naomi writes A = w2
+      - Naomi writes B = w2
+      - Jane writes B = w1
+    - We've got a mixed result again. Shoot.
+  - Can mitigate using CRDTs
+  - Or, if A and B are sequentially consistent, can use a CaS operation to
+    ensure agreement on order
+    - "Write w2 iff the last write was w1"
+  - If operations affect multiple keys, the CaS logic has to be applied at that
+  level too
+- Helpful properties for incremental migrations
+  - Determinism
+    - Avoid having the DB generate random numbers, automatic IDs, timestamps
+    - Easier to apply updates to two datastores and get the same results
+  - Idempotence
+    - Lets you retry updates freely
+  - Commutativity
+    - Removes the need for serializing updates
+  - CRDTs: associativity, commutativity, idempotence.
+  - Immutability: trivial CRDTs
+  - Statelessness: no state to worry about!
+    - Just make sure you talk to external stateful stuff the same way
+- What about swapping out queues?
+  - As we've touched, queue systems should already be designed for idempotency,
+    and ideally commutativity
+    - If so, this is (relatively) easy
+    - Workers consume from both queues
+    - Flip producers to send messages only to the new queue
+    - Wait for old queue to be exhausted
+    - Decommission old queue
+  - But we WANTED order???
+    - You're going to need to reconstruct it
+    - One option: single producer tightly coupled to queue
+      - Writes each message m to both A and B; doesn't move on until both ack
+      - This enforces that both A and B agree on order
+      - Consumers can treat A and B identically: consume just from A or B
+        - Again, assumes idempotence!
+    - Another option: sequence numbers, order reconstructed at client
+      - e.g. assign sequence numbers to each value
+        - Use the queue offsets from A?
+        - Use a consensus system?
+      - Clients read sequence numbers, store in internal buffer, apply in order
+
 
 ### Review
 
