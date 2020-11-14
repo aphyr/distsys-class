@@ -431,7 +431,7 @@ discuss some high-level *properties* of distributed systems.
     - Concurrent withdrawals were improperly isolated, allowing users to overspend
     - Safety audits didn't notice negative balances
     - 12.3% of exchange funds stolen; loss spread among users
-  - [Warszawski & Bailis 2017: Acidrain](http://www.bailis.org/papers/acidrain-sigmod2017.pdf)
+  - [Warszawski & Bailis 2017: ACIDRain](http://www.bailis.org/papers/acidrain-sigmod2017.pdf)
     - Automated identification of consistency violation in web apps
     - e.g. Buy one gift card, then spend it an unlimited number of times
     - e.g. Buy a pen, add a laptop to cart during checkout, get a free laptop
@@ -439,6 +439,10 @@ discuss some high-level *properties* of distributed systems.
       - Weak DB isolation defaults
       - Improper use of transactional scope
       - Failing to use any transactions whatsoever
+  - [Chase Bank's credit card rewards system](https://chadscira.com/post/5fa269d46142ac544e013d6e/DISCLOSURE-Unlimited-Chase-Ultimate-Rewards-Points)
+    - Concurrent transfers between balances allowed the creation of $70,000 USD
+      in travel vouchers.
+    - Redeemable for cash!
 
 ## Tradeoffs
 
@@ -577,6 +581,7 @@ consistency.
 - Unlike sequentially consistent systems, no "single source of truth"
 - But unlike naive eventually consistent systems, never *lose* information
   - Unless you explicitly make them lose information
+  - We call this property "coalescence"
 - Works well in highly-available systems
   - Web/mobile clients
   - Dynamo
@@ -1252,7 +1257,7 @@ than the *transformations*.
   - So too will services and their boundaries
   - Gradually accruing body of assumptions about service relation to the world
   - Punctuated by rewrites to respond to changing external pressures
-  - Tushman & Romanelli, 1985: Organizational Evolution
+  - Tushman & Romanelli, 1985: Organizational Transformation as Punctuated Equilibrium
 - Services can be libraries
   - Initially, *all* your services should be libraries
   - Perfectly OK to depend on a user library in multiple services
