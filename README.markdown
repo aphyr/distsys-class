@@ -745,6 +745,55 @@ consistency.
   - etcd
   - Consul
 
+## What About Transactions?
+
+- Iterated consensus gives us agreement on a single total order of operations
+- Unnecessary blocking betwixt transactions which *could* execute independently
+- How do we improve performance?
+- [Distributed Transaction Architectures](https://aphyr.com/media/talks/2019/distributed-transaction-architectures.pdf)
+- Single-writer
+  - All updates go through a single queue, readers execute on snapshots
+  - Usually involves some kind of persistent data structure
+  - Serializable to strict-1SR
+  - See [Datomic](https://docs.datomic.com/on-prem/architecture.html)
+- OK but multiple writers?
+  - In general, have several shards, each running a consensus-backed FSM
+  - Some kind of protocol for cross-shard txns
+- Independent shards
+  - A sort of halfway-step to general-purpose transactions
+  - Disallow cross-shard txns
+  - Just run a bunch of independent consensus FSMs
+  - Can add a single global consensus group for cross-shard transactions
+    - Limited throughput though!
+  - See [VoltDB](https://docs.voltdb.com/UsingVoltDB/IntroHowVoltDBWorks.php)
+- [Percolator](https://storage.googleapis.com/pub-tools-public-publication-data/pdf/36726.pdf)
+  - Snapshot isolation over linearizable shards
+  - Time Stamp Oracle assigns sequential txn timestamps (using consensus)
+  - Read timestamp, read from leaders, prewrite, commit timestamp, commit, finalize
+  - 14 network hops, potentially all cross-DC
+  - See [TiDB](https://tikv.org/deep-dive/distributed-transaction/percolator/)
+- [Spanner](https://static.googleusercontent.com/media/research.google.com/en//archive/spanner-osdi2012.pdf)
+  - "External consistency" (strict-1SR?)
+  - Speed up timestamp assignment by using GPS+Atomic clocks
+  - Basically 2PC over Paxos groups
+    - Locks on Paxos leaders
+    - Pick one Paxos group to serve as the commit record for entire txn
+  - Fixed latency floor to ensure timestamp monotonicity
+  - See [Yugabyte DB](https://blog.yugabyte.com/distributed-postgresql-on-a-google-spanner-architecture-storage-layer/)
+  - See [CockroachDB](https://www.cockroachlabs.com/guides/cockroachdb-the-resilient-geo-distributed-sql-database-sigmod-2020/)
+- [Calvin](http://cs.yale.edu/homes/thomson/publications/calvin-sigmod12.pdf)
+  - Order transactions in a log using consensus
+  - Shard log for arbitrarily high throughput
+  - Periodically seal log windows and apply transactions to shards
+  - Application requires no communication!
+  - Strict-1SR
+  - 1 inter-DC round trip, more hops for local comms
+  - Scalable throughput
+  - Minimum latency floor
+  - Txns must be pure, expressed up-front
+    - Could be made interactive with extensions to protocol
+  - See [Fauna](https://fauna.com/)
+
 ## Review
 
 Systems which only add facts, not retract them, require less coordination to
