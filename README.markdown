@@ -9,13 +9,13 @@ lecture and discussion.  Participants will gain an intuitive understanding of
 key distributed systems terms, an overview of the algorithmic landscape, and
 explore production concerns.
 
-## What makes a thing distributed?
+## What makes a thing distributed
 
 Lamport, 1987:
 
->  A distributed system is one in which the failure of a computer
->  you didn't even know existed can render your own computer
->  unusable.
+> A distributed system is one in which the failure of a computer
+> you didn't even know existed can render your own computer
+> unusable.
 
 - First glance: \*nix boxen in our colo, running processes communicating via
   TCP or UDP.
@@ -164,7 +164,7 @@ Lamport, 1987:
   - This causes all kinds of havoc in, say, metrics collection
   - And debugging it is *hard*
   - TCP gives you flow control and repacks logical messages into packets
-    - You'll need to re-build flow-control and backpressure
+    - You'll need to re-build flow-control and back-pressure
   - TLS over UDP is a thing, but tough
 - UDP is really useful where TCP FSM overhead is prohibitive
   - Memory pressure
@@ -191,15 +191,15 @@ Lamport, 1987:
       - https://groups.google.com/forum/#!search/Supermicro$20SYS-1029UX-LL1-S16$20system$20clock$20running$20too$20fast/mechanical-sympathy/oG9vLZVYjVA/DU-T9QpBAgAJ
   - Caveat: By *centuries*
     - NTP might not care
-    - http://rachelbythebay.com/w/2017/09/27/2153/
+    - <http://rachelbythebay.com/w/2017/09/27/2153/>
   - Caveat: NTP can still jump the clock backwards (default: delta > 128 ms)
-    - https://www.eecis.udel.edu/~mills/ntp/html/clock.html
+    - <https://www.eecis.udel.edu/~mills/ntp/html/clock.html>
   - Caveat: POSIX time is not monotonic by *definition*
     - Cloudflare 2017: Leap second at midnight UTC meant time flowed backwards
     - At the time, Go didn't offer access to CLOCK_MONOTONIC
     - Computed a negative duration, then fed it to rand.int63n(), which paniced
     - Caused DNS resolutions to fail: 1% of HTTP requests affected for several hours
-    - https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/
+    - <https://blog.cloudflare.com/how-and-why-the-leap-second-affected-cloudflare-dns/>
   - Caveat: The timescales you want to measure may not be attainable
   - Caveat: Threads can sleep
   - Caveat: Runtimes can sleep
@@ -261,7 +261,6 @@ Lamport, 1987:
   - I don't know who's doing it yet, but I'd bet datacenters in the
     future will offer dedicated HW interfaces for bounded-accuracy time.
 
-
 ## Review
 
 We've covered the fundamental primitives of distributed systems. Nodes
@@ -269,9 +268,6 @@ exchange messages through a network, and both nodes and networks can fail in
 various ways. Protocols like TCP and UDP give us primitive channels for
 processes to communicate, and we can order events using clocks. Now, we'll
 discuss some high-level *properties* of distributed systems.
-
-
-
 
 ## Availability
 
@@ -317,7 +313,6 @@ discuss some high-level *properties* of distributed systems.
   - And on finer timescales!
     - "Apdex for the user service just dropped to 0.5; page ops!"
 - Ideally: integral of happiness delivered by your service?
-
 
 ## Consistency
 
@@ -478,7 +473,6 @@ discuss some high-level *properties* of distributed systems.
     - Monotonic Reads
     - Monotonic Writes
 
-
 ### Harvest and Yield
 
 - Fox & Brewer, 1999: Harvest, Yield, and Scalable Tolerant Systems
@@ -495,8 +489,8 @@ discuss some high-level *properties* of distributed systems.
     - e.g. "99% of the time, you can read 90% of your prior writes"
   - Strongly dependent on workload, HW, topology, etc
   - Can tune harvest vs yield on a per-request basis
-   - "As much as possible in 10ms, please"
-   - "I need everything, and I understand you might not be able to answer"
+    - "As much as possible in 10ms, please"
+    - "I need everything, and I understand you might not be able to answer"
 
 ### Hybrid systems
 
@@ -517,7 +511,6 @@ are the rules that govern what operations can happen and when. Stronger
 consistency models generally come at the cost of performance and availability.
 Next, we'll talk about different ways to build systems, from weak to strong
 consistency.
-
 
 ## Avoid Consensus Wherever Possible
 
@@ -547,7 +540,6 @@ consistency.
   - Unordered programming with flow analysis
   - Can tell you where coordination *would* be required
 
-
 ### Gossip
 
 - Message broadcast system
@@ -565,7 +557,7 @@ consistency.
   - Hop up to a connector node which relays to other connector nodes
   - Reduces superfluous messages
   - Reduces latency
-  - Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
+  - Plumtree (Leitao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
 - Push-Sum et al
   - Sum inputs from everyone you've received data from
   - Broadcast that to a random peer
@@ -617,7 +609,6 @@ consistency.
   - Probably best in concert with stronger transactional systems
   - See also: COPS, Swift, Eiger, Calvin, etc
 
-
 ## Fine, We Need Consensus, What Now?
 
 - The consensus problem:
@@ -661,7 +652,6 @@ consistency.
   - In stable clusters, you can get away with only a single round-trip to a
     majority of nodes.
   - More during cluster transitions.
-
 
 ### Paxos
 
@@ -803,8 +793,6 @@ transactions. Serializability and linearizability require *consensus*, which we
 can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
 *scales* of distributed systems.
 
-
-
 ## Characteristic latencies
 
 - Latency is *never* zero
@@ -854,12 +842,11 @@ can obtain through Paxos, ZAB, VR, or Raft. Now, we'll talk about different
 - Network is within an order of mag compared to uncached disk seeks
   - Or faster, in EC2
     - EC2 disk latencies can routinely hit 20ms
-      - 200ms?
-        - *20,000* ms???
-          - Because EBS is actually other computers
-          - LMAO if you think anything in EC2 is real
-            - Wait, *real disks do this too*?
-              - What even are IO schedulers?
+      - 200ms? *20,000* ms???
+      - Because EBS is actually other computers
+      - LMAO if you think anything in EC2 is real
+      - Wait, *real disks do this too*?
+      - What even are IO schedulers?
 - But network is waaaay slower than memory/computation
   - If your aim is *throughput*, work units should probably take longer than a
     millisecond
@@ -911,7 +898,6 @@ largely performance concerns: knowing how to minimize coordination. On LANs,
 latencies are short enough for many network hops before users take notice. In
 geographically replicated systems, high latencies drive eventually consistent
 and datacenter-pinned solutions.
-
 
 ## Common distributed systems
 
@@ -1013,7 +999,6 @@ building applications. Streaming systems are applied for continuous,
 low-latency processing of datasets, and tend to look more like frameworks than
 databases. Their dual, distributed queues, focus on the *messages* rather
 than the *transformations*.
-
 
 ## A Pattern Language
 
@@ -1185,7 +1170,7 @@ than the *transformations*.
   - Sharding for scalability
   - Avoiding coordination via CRDTs
   - Flake IDs: *mostly* time-ordered identifiers, zero-coordination
-    - See http://yellerapp.com/posts/2015-02-09-flake-ids.html
+    - See <http://yellerapp.com/posts/2015-02-09-flake-ids.html>
   - Partial availability: users can still use some parts of the system
   - Processing a queue: more consumers reduces the impact of expensive events
 
@@ -1521,8 +1506,6 @@ scale. As software grows, different components must scale independently,
 and we break out libraries into distinct services. Service structure goes
 hand-in-hand with teams.
 
-
-
 ## Production Concerns
 
 - More than design considerations
@@ -1593,8 +1576,8 @@ hand-in-hand with teams.
     - In relation to its dependencies
     - Which can, in turn, drive new tests
   - In a way, good monitoring is like continuous testing
-   - But not a replacement: these are distinct domains
-   - Both provide assurance that your changes are OK
+    - But not a replacement: these are distinct domains
+    - Both provide assurance that your changes are OK
   - Want high-frequency monitoring
     - Production behaviors can take place on 1ms scales
       - TCP incast
@@ -1612,13 +1595,13 @@ hand-in-hand with teams.
     - Key metrics for most systems
       - Apdex: successful response WITHIN latency SLA
       - Latency profiles: 0, 0.5, 0.95, 0.99, 1
-        - Percentiles, not means
-        - BTW you can't take the mean of percentiles either
+      - ^ Percentiles, not means
+      - ^ BTW you can't take the mean of percentiles either
       - Overall throughput
       - Queue statistics
       - Subjective experience of other systems latency/throughput
-        - The DB might think it's healthy, but clients could see it as slow
-        - Combinatorial explosion--best to use this when drilling into a failure
+      - ^ The DB might think it's healthy, but clients could see it as slow
+      - ^ Combinatorial explosion--best to use this when drilling into a failure
     - You probably have to write this instrumentation yourself
       - Invest in a metrics library
   - Out-of-the-box monitoring usually doesn't measure what really matters: your
@@ -1744,7 +1727,6 @@ hand-in-hand with teams.
     - Ask Jeff Hodges why it's hard: see his RICON West 2013 talk
     - See Zach Tellman - Everything Will Flow
 
-
 ## Review
 
 Running distributed systems requires cooperation between developers, QA, and
@@ -1759,10 +1741,15 @@ special care.
 
 ### Online
 
-- Mixu has a delightful book on distributed systems with incredible detail. http://book.mixu.net/distsys/
-- Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/
-- The Fallacies of Distributed Computing is a classic text on mistaken assumptions we make designing distributed systems. http://www.rgoarchitects.com/Files/fallacies.pdf
-- Christopher Meiklejohn has a list of key papers in distributed systems. http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html
+- Mixu has a delightful book on distributed systems with incredible detail.
+  <http://book.mixu.net/distsys/>
+- Jeff Hodges has some excellent, production-focused advice.
+  <https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/>
+- The Fallacies of Distributed Computing is a classic text
+  on mistaken assumptions we make designing distributed systems.
+  <http://www.rgoarchitects.com/Files/fallacies.pdf>
+- Christopher Meiklejohn has a list of key papers in distributed systems.
+  <http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html>
 
 ### Trees
 
