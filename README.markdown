@@ -1,6 +1,6 @@
-# An introduction to distributed systems
+# An Introduction to Distributed Systems
 
-Copyright 2014, 2016, 2017 Kyle Kingsbury; Jepsen, LLC.
+Copyright 2014--2020 Kyle Kingsbury; Jepsen, LLC.
 
 This outline accompanies a 12-16 hour [overview class on distributed systems
 fundamentals](http://jepsen.io/training.html). The course aims to introduce
@@ -257,7 +257,9 @@ Lamport, 1987:
 - More expensive than you'd like
   - Several hundred per GPS receiver
   - Atomic clocks for local corroboration: $$$$?
-  - Need multiple types of GPS: vendors can get it wrong
+  - Probably want multiple types of GPS clock
+    - https://rachelbythebay.com/w/2015/09/07/noleap/
+      - Confusing vendor checkbox which applied UTC corrections to GPS time
   - I don't know who's doing it yet, but I'd bet datacenters in the
     future will offer dedicated HW interfaces for bounded-accuracy time.
 
@@ -1729,6 +1731,8 @@ hand-in-hand with teams.
   - No node has unbounded memory. Your queues *must* be bounded
   - But how big? Nobody knows
   - Instrument your queues in prod to find out
+- Little's Law: mean queue depth = mean arrival rate * mean latency
+  - This is distribution-independent!
 - Queues exist to smooth out fluctuations in load
   - Improves throughput at expense of latency
   - If your load is higher than capacity, no queue will save you
@@ -1763,7 +1767,12 @@ special care.
 - Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/
 - The Fallacies of Distributed Computing is a classic text on mistaken assumptions we make designing distributed systems. http://www.rgoarchitects.com/Files/fallacies.pdf
 - Christopher Meiklejohn has a list of key papers in distributed systems. http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html
+- Dan Creswell has a lovely reading list. https://dancres.github.io/Pages/
 
 ### Trees
 
-- Nancy Lynch's "Distributed Algorithms" is a comprehensive overview of the field from a more theoretical perspective
+- Martin Kleppmann's [Designing Data-Intensive
+  Applications](https://dataintensive.net/) offers a thorough tour of
+  distributed systems for practitioners.
+- Nancy Lynch's "Distributed Algorithms" is a comprehensive overview of the
+  field from a more theoretical perspective
