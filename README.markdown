@@ -1,13 +1,74 @@
 # An Introduction to Distributed Systems
 
-Copyright 2014--2020 Kyle Kingsbury; Jepsen, LLC.
+Copyright 2014--2021 Kyle Kingsbury & Jepsen, LLC.
 
-This outline accompanies a 12-16 hour [overview class on distributed systems
-fundamentals](http://jepsen.io/training.html). The course aims to introduce
+This outline accompanies a 12 to 24 hour [overview class on distributed systems
+fundamentals](https://jepsen.io/training.html). The course aims to introduce
 software engineers to the practical basics of distributed systems, through
-lecture and discussion.  Participants will gain an intuitive understanding of
-key distributed systems terms, an overview of the algorithmic landscape, and
-explore production concerns.
+lecture and discussion, and optional
+[labwork](https://github.com/jepsen-io/maelstrom). Participants will gain an
+intuitive understanding of key distributed systems terms, an overview of the
+algorithmic landscape, and explore production concerns.
+
+## Intro
+
+- My name is Kyle Kingsbury
+  - Pronouns: he/him
+  - Email: aphyr@jepsen.io
+  - This outline: https://github.com/aphyr/distsys-class
+- I've worked on distributed systems from several perspectives
+  - 2003--2009: sysadmin, network operations, web developer
+  - 2009--2014: backend engineer, database wrangler at various web startups
+  - 2014--now: distributed systems safety testing (Jepsen)
+- This class is aimed at practitioners
+  - "Things I Wish I Would Have Known"
+  - Backend engineers
+  - Frontend engineers
+  - Ops folks
+  - Product managers
+- This class aims to prepare you to write, operate, and use distributed systems
+  - First half: theoretical framework
+    - A map of how concepts fit together
+      - Not about memorizing everything; it's about knowing where to look
+    - Establish a shared language
+      - To talk with your peers
+      - To read a paper
+      - To evaluate a system's claims
+    - Understand fundamental principles
+      - Time, ordering, nodes, networks, faults, liveness, safety
+    - Classes of algorithms
+      - What they can and can't do, when to apply each
+  - Second half: practical concerns
+    - A grab bag of design patterns
+      - Illustrative anecdotes
+      - Computers were, in fact, a mistake
+      - What *isn't* in the papers?
+    - Finally, production concerns
+      - Deployment, debugging, monitoring
+- Class logistics
+  - This class is what you make of it
+    - We can go as deep as you want, or skip over familiar ground
+    - Jump in with questions, challenges, ideas at any time
+  - We'll take ~10-minute breaks every hour or so, plus lunch
+  - If you need to duck out for whatever reason, that's fine!
+    - Outages, kids, pets, whatever
+    - The outline on GitHub can help fill in the gaps
+    - You can ask me during class or a break about something you missed!
+  - I'll ask for your thoughts often, but you can also jump in whenever
+    - If you *don't* want to be called on, that's cool--please let me know
+  - If you think of something after class, you can email me!
+    - Or write it down for the next day's discussion
+- If we're doing labs:
+  - There are labs for this class!
+    - Mostly in the middle
+  - Remind folks of the prereq: [Getting Ready](https://github.com/jepsen-io/maelstrom/blob/main/doc/01-getting-ready/index.md)
+- If we're remote:
+  - You can turn off video whenever you like
+    - But please, if *some* people can be on video, that's really helpful
+    - Seeing faces helps me know whether the lecture is working for you!
+  - For the labs, we'll be doing a shared tmux session
+    - Have your SSH pubkey handy
+- OK, let's get going!
 
 ## What makes a thing distributed?
 
@@ -38,7 +99,7 @@ Lamport, 1987:
   - Space probes
   - Paying bills
   - Doctors making referrals
-  - Drunk friends trying to make plans via text message
+  - Trying to make plans via text message
   - Every business meeting ever
 
 ## Nodes and networks
