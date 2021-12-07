@@ -1,0 +1,30 @@
+*.class
+
+# Git files
+**/*.orig
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Intellij
+*.iml
+**/*.iml
+.idea
+
+logs
+**/logs
+**/*.log.gz
+
+# Maven generated content
+**/dependency-reduced-pom.xml
+**/target
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+**/*.DS_Store
