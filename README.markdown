@@ -1,8 +1,8 @@
 # An Introduction to Distributed Systems
 
-Copyright 2014--2021 Kyle Kingsbury & Jepsen, LLC.
+Copyright 2014--2024 Kyle Kingsbury & Jepsen, LLC.
 
-This outline accompanies a 12 to 24 hour [overview class on distributed systems
+This outline accompanies a 16 to 32 hour [overview class on distributed systems
 fundamentals](https://jepsen.io/training.html). The course aims to introduce
 software engineers to the practical basics of distributed systems, through
 lecture and discussion, and optional
@@ -67,7 +67,6 @@ algorithmic landscape, and explore production concerns.
     - But please, if *some* people can be on video, that's really helpful
     - Seeing faces helps me know whether the lecture is working for you!
   - For the labs, we'll be doing a shared tmux session
-    - Have your SSH pubkey handy
 - OK, let's get going!
 
 ## What makes a thing distributed?
@@ -404,13 +403,6 @@ discuss some high-level *properties* of distributed systems.
 
 - Once I read a value, any subsequent write will take place after that read
 
-### Serializability
-
-- All operations (transactions) appear to execute atomically
-- In some order
-  - No constraints on what that order is
-  - Perfectly okay to read from the past, for instance
-
 ### Causal consistency
 
 - Suppose operations can be linked by a DAG of causal relationships
@@ -437,13 +429,45 @@ discuss some high-level *properties* of distributed systems.
   times
 - Real-time, external constraints let us build very strong systems
 
-### ACID isolation levels
+### Transactional Models
 
-- ANSI SQL's ACID isolation levels are weird
-  - Basically codified the effects of existing vendor implementations
-  - Definitions in the spec are ambiguous
+- Serializable: all operations (transactions) appear to execute atomically
+  - In some order
+    - No constraints on what that order is
+    - Perfectly okay to read from the past, for instance
 - Adya 1999: Weak Consistency: A Generalized Theory and Optimistic
   Implementations for Distributed Transactions
+  - Objects have a total version order
+    - x0 << x1 << x2
+    - This is an abstract requirement; DB may not know what the version order is
+  - Dependencies between transactions
+    - write-read  (wr): T1 writes x1, T2 reads x1
+    - write-write (ww): T1 writes x1, T2 writes x2
+    - read-write  (rw): T1 reads x1, T2 writes x2
+  - Phenomena are (mostly) cycles made of these edges
+    - G0 (write cycle): cycle in ww
+    - G1a (aborted read): committed txn reads version written by aborted txn
+    - G1b (intermediate read): read non-final write of x by some other txn
+    - G1c (cyclic information flow): cycle in ww U wr
+    - G2  (anti-dependency cycle): cycle in ww U wr U rw
+    - G2-item: G2 without predicates
+    - G-single: G2 with only one rw
+    - etc. etc.
+  - Isolation levels prevent these phemomena
+    - Read Uncommitted: no G0
+    - Read Committed: no G0, G1
+    - Repeatable Read: no G0, G1, G2-item
+    - SI: No g0, G1, G-single
+      - It's a little more subtle than this, but we generally don't have time
+        for G-nonadjacent
+    - Serializable: no G0, G1, G2
+  - Can augment graphs with process or realtime edges
+    - Strong X means "X, plus order of txns in real time"
+    - Strong Session X means "X, plus order of txns in each session"
+    - e.g. Strong Serializable: no cycle in ww U wr U rw U realtime
+- Alternate route: ANSI SQL's ACID isolation levels are weird
+  - Basically codified the effects of existing vendor implementations
+  - Definitions in the spec are ambiguous
   - Each ANSI SQL isolation level prohibits a weird phenomenon
   - Read Uncommitted
     - Prevents P0: *dirty writes*
@@ -1168,6 +1192,7 @@ than the *transformations*.
 - Deployed to great effect in systems like [Borg & Kubernetes](https://queue.acm.org/detail.cfm?id=2898444)
 - Also applicable to keeping data in sync between systems
   - Making sure every order is shipped & billed, for instance
+- Again, we're looking for *monotonicity*
 
 ### Backups
 
@@ -1381,11 +1406,15 @@ than the *transformations*.
 - Production software is a fundamentally social artifact
 - Natural alignment: a team or person owns a specific service
   - Jo Freeman, "The Tyranny of Structurelessness"
+    - https://www.jofreeman.com/joreen/tyranny.htm
     - Responsibility and power should be explicit
     - Rotate people through roles to prevent fiefdoms
+      - People own *problem spaces*, not services
       - Promotes information sharing
     - But don't rotate too often
       - Ramp-up costs in software are very high
+  - Pair Freeman with Downs' "Inside Bureaucracy"
+    - https://www.rand.org/content/dam/rand/pubs/papers/2008/P2963.pdf
 - As the team grows, its mission and thinking will formalize
   - So too will services and their boundaries
   - Gradually accruing body of assumptions about service relation to the world
@@ -1679,6 +1708,7 @@ hand-in-hand with teams.
         - BTW you can't take the mean of percentiles either
       - Overall throughput
       - Queue statistics
+      - Queries per query
       - Subjective experience of other systems latency/throughput
         - The DB might think it's healthy, but clients could see it as slow
         - Combinatorial explosion--best to use this when drilling into a failure
@@ -1752,6 +1782,22 @@ hand-in-hand with teams.
 - But not too much
   - "Ironies of Automation", Bainbridge 1983
     - https://pdfs.semanticscholar.org/0713/bb9d9b138e4e0a15406006de9b0cddf68e28.pdf
+  - Controlling complex systems requires operators with accurate mental models
+    of how the system is behaving, ought to behave, and how it responds to
+    control inputs
+    - If you aren't engaged in the control process, you forget these things
+    - Human takeover is then challenging!
+  - Humans literally cannot pay attention to things that don't change for more
+    than ~30 minutes
+  - Merely monitoring, as opposed to running, a complex process "deskills"
+    operators
+  - So... consider *deliberately* bringing humans into the control process
+  - Catastrophic failure is easy to identify
+    - But automated control tends to mask failure: prefailure trends are not
+      apparent until well outside the automated-control regime
+  - If humans are expected to verify automated control decisions, humans must
+    be *capable* of verifying that reasoning
+    - Huge ML models (for example) make inscrutable decisions
 
 ### Feature flags
 
@@ -1825,7 +1871,7 @@ special care.
 ### Online
 
 - Mixu has a delightful book on distributed systems with incredible detail. http://book.mixu.net/distsys/
-- Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/
+- Jeff Hodges has some excellent, production-focused advice. https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/ https://player.vimeo.com/video/42898664
 - The Fallacies of Distributed Computing is a classic text on mistaken assumptions we make designing distributed systems. http://www.rgoarchitects.com/Files/fallacies.pdf
 - Christopher Meiklejohn has a list of key papers in distributed systems. http://christophermeiklejohn.com/distributed/systems/2013/07/12/readings-in-distributed-systems.html
 - Dan Creswell has a lovely reading list. https://dancres.github.io/Pages/
