@@ -653,7 +653,8 @@ consistency.
   - Reduces superfluous messages
   - Reduces latency
   - Plumtree (Leit ̃ao, Pereira, & Rodrigues, 2007: Epidemic Broadcast Trees)
-- Push-Sum et al
+- Push-Sum
+  - Kempe, Dobra, & Gehrke - Gossip-Based Computation of Aggregate Information
   - Sum inputs from everyone you've received data from
   - Broadcast that to a random peer
   - Extensions for minima, maxima, means
@@ -1721,7 +1722,7 @@ hand-in-hand with teams.
     - Where your app does something common (e.g. rails apps) tools like New
       Relic work well
   - Shard metrics by client
-    - Helpfu when users have varying workloads
+    - Helpful when users have varying workloads
     - Can tune thresholds to be appropriate for that client
     - A few for major clients, another bucket for "the rest"
   - Superpower: distributed tracing infra (Zipkin, Dapper, etc)
@@ -1814,8 +1815,6 @@ hand-in-hand with teams.
 - When things go wrong, you can *tune* the system's behavior
   - When coordination service is down, fail *safe*!
 
-
-
 ### Chaos engineering
 
 - Breaking things in production
@@ -1883,3 +1882,8 @@ special care.
   distributed systems for practitioners.
 - Nancy Lynch's "Distributed Algorithms" is a comprehensive overview of the
   field from a more theoretical perspective
+- Suggestions from students:
+  - Donella Meadows' "Thinking in Systems"
+  - "Database Internals: A Deep Dive into How Distributed Data Systems Work"
+    - Perhaps more intense than Kleppman
+  - "Thinking in Systems"
