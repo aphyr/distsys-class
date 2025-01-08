@@ -271,6 +271,7 @@ Lamport, 1987:
 - Just don't.
 - At least OS monotonic clocks are monotonic, right?
   - oh no: https://github.com/rust-lang/rust/blob/eed12bcd0cb281979c4c9ed956b9e41fda2bfaeb/src/libstd/time.rs#L201-L232
+  - Use CLOCK_BOOTTIME, which accounts for VM pauses
 
 ### Lamport Clocks
 
@@ -1842,6 +1843,7 @@ hand-in-hand with teams.
 - Queues exist to smooth out fluctuations in load
   - Improves throughput at expense of latency
   - If your load is higher than capacity, no queue will save you
+    - https://ferd.ca/queues-don-t-fix-overload.html
     - Shed load or apply backpressure when queues become full
     - Instrument this
       - When load-shedding occurs, alarm bells should ring
