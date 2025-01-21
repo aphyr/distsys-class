@@ -122,10 +122,10 @@ Lamport, 1987:
   - But so long as that system as a whole provides "fast, coherent"
     operations, we can treat it as a single node.
 - Formal models for processes
-  - Communicating Sequential Processes
-  - Pi-calculus
-  - Ambient calculus
-  - Actor model
+  - [Actor model](https://dspace.mit.edu/handle/1721.1/6952)
+  - [Communicating Sequential Processes](https://www.cs.cmu.edu/~crary/819-f09/Hoare78.pdf)
+  - [Pi-calculus](https://golem.ph.utexas.edu/category/2009/08/the_pi_calculus.html)
+  - [Ambient calculus](http://lucacardelli.name/Talks/1998-03-30%20Mobile%20Ambients%20%28ETAPS%29.pdf)
 - Formal models for node failure
   - Crash-stop
   - Crash-recover
