@@ -1,6 +1,6 @@
 # An Introduction to Distributed Systems
 
-Copyright 2014--2024 Kyle Kingsbury & Jepsen, LLC.
+Copyright Kyle Kingsbury & Jepsen, LLC.
 
 This outline accompanies a 16 to 32 hour [overview class on distributed systems
 fundamentals](https://jepsen.io/training.html). The course aims to introduce
@@ -58,6 +58,9 @@ algorithmic landscape, and explore production concerns.
     - If you *don't* want to be called on, that's cool--please let me know
   - If you think of something after class, you can email me!
     - Or write it down for the next day's discussion
+  - Recording is prohibited
+    - Teaching is my livelihood
+    - And this outline is free!
 - If we're doing labs:
   - There are labs for this class!
     - Mostly in the middle
